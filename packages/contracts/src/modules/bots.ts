@@ -1,35 +1,6 @@
 import { z } from 'zod';
 
 /**
- * Niveau d'acces d'un compte sur un bot.
- *
- * Repris de BotManager, ou il repondait au besoin : voir, lancer, configurer.
- * `none` est une valeur explicite et non l'absence de ligne, parce qu'un refus
- * pose sur un bot precis doit pouvoir surcharger un droit herite plus large.
- */
-export const botAccessLevelSchema = z.enum(['none', 'view', 'execute', 'manage']);
-export type BotAccessLevel = z.infer<typeof botAccessLevelSchema>;
-
-/**
- * Rang de chaque niveau, pour les comparaisons.
- *
- * Les valeurs sont des chaines et non des entiers : une base ou l'on lit
- * `access_level = 2` demande d'aller chercher ce que vaut 2, et une insertion
- * dans l'echelle renumeroterait tout. Le rang vit donc ici, au seul endroit qui
- * en a besoin.
- */
-const RANGS: Record<BotAccessLevel, number> = {
-  none: 0,
-  view: 1,
-  execute: 2,
-  manage: 3,
-};
-
-/** Vrai si `accorde` couvre au moins `requis`. */
-export const couvre = (accorde: BotAccessLevel, requis: BotAccessLevel): boolean =>
-  RANGS[accorde] >= RANGS[requis];
-
-/**
  * Etiquettes libres plutot qu'un enumere de categories.
  *
  * BotManager figeait neuf categories dans le coeur -- dont `Social` et
@@ -88,20 +59,27 @@ export const botManifestSchema = z.object({
 export type BotManifest = z.infer<typeof botManifestSchema>;
 
 /**
- * Un bot tel que l'API le sert : son manifeste, son etat de chargement et le
- * droit du demandeur dessus.
+ * Un bot tel que l'API le sert : son manifeste, son etat de chargement, et ce
+ * que le demandeur a le droit d'en faire.
  *
- * `access` est calcule pour le compte qui interroge. L'interface n'a donc jamais
- * a recalculer un droit pour decider d'afficher un bouton, et ne peut pas se
- * tromper differemment du serveur.
+ * Les capacites sont **calculees par le serveur** pour le compte qui interroge.
+ * L'interface n'a donc jamais a recalculer un droit pour decider d'afficher un
+ * bouton, et ne peut pas se tromper differemment du serveur. Ce n'est pas un
+ * controle d'acces : chaque appel est revalide de toute facon.
+ *
+ * Trois booleens plutot qu'un niveau ordonne. BotManager avait une echelle
+ * (aucun < voir < executer < gerer) qui supposait que les capacites
+ * s'emboitent -- alors qu'un compte peut tres bien configurer un bot sans avoir
+ * a le lancer.
  */
 export const botSummarySchema = z.object({
   manifest: botManifestSchema,
-  /** Vrai si au moins un worker vivant a reussi a charger ce bot. */
+  /** Le module a-t-il ete charge, ou son manifeste refuse ? */
   loaded: z.boolean(),
-  /** Motif du refus quand `loaded` est faux -- manifeste invalide, import en erreur. */
+  /** Motif du refus quand `loaded` est faux -- manifeste invalide, version de SDK. */
   loadError: z.string().nullable(),
-  access: botAccessLevelSchema,
+  canExecute: z.boolean(),
+  canManage: z.boolean(),
 });
 export type BotSummary = z.infer<typeof botSummarySchema>;
 

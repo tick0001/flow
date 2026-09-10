@@ -37,6 +37,11 @@ référence.
 Se termine quand un bot déposé dans `bots/` apparaît dans l'interface avec ses paramètres, sans que
 rien n'ait été recompilé.
 
+**L'API ne charge pas les modules**, et c'est ce qui décide de la forme du SDK : le manifeste est
+produit à la construction, sur la machine de l'auteur, et le serveur ne lit que ce fichier JSON.
+Déposer un bot revient à exécuter son auteur ; rien n'oblige à le faire dans le processus qui
+détient les identifiants de la base. Voir [le SDK de bots](15-sdk-bots.md).
+
 ## J3 — L'exécution
 
 `apps/worker`, file BullMQ, cycle de vie d'une exécution, contexte navigateur isolé par run,

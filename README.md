@@ -22,6 +22,7 @@ administer the tree. **No bot runs yet** — there is no worker and no bot SDK; 
 What is already decided and argued lives in [`docs/`](docs/), in French:
 [functional scope](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
 [entities, rights and security](docs/03-entites-droits-securite.md),
+[bot SDK](docs/15-sdk-bots.md),
 [interface](docs/12-interface.md), [roadmap](docs/06-feuille-de-route.md).
 
 Isolation between organisations is proven by integration tests against a real PostgreSQL database:

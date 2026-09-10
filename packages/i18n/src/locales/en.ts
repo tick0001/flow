@@ -88,6 +88,22 @@ export const en: Traductions = {
     confirmerSuppression: 'Delete this entity?',
     suppressionImpossible: 'This entity has sub-entities: delete those first.',
   },
+  bots: {
+    titre: 'Bots',
+    intro:
+      'The bots deployed on this installation. A bot is code: its manifest is produced at build time, and the server reads only that file.',
+    aucun: 'No bots deployed.',
+    aucunAide: 'Drop a bot folder in, then re-read the directory.',
+    relire: 'Re-read the directory',
+    parametres: 'Parameters',
+    aucunParametre: 'No parameters.',
+    obligatoire: 'required',
+    defaut: 'default',
+    refuse: 'Refused',
+    lancer: 'Run',
+    lancerBientot: 'Running arrives at milestone J3.',
+    par: 'by',
+  },
   comptes: {
     titre: 'Accounts',
     intro:

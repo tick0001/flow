@@ -23,6 +23,7 @@ et J3.
 Ce qui est déjà décidé et argumenté vit dans [`docs/`](docs/) :
 [périmètre](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
 [entités, droits et sécurité](docs/03-entites-droits-securite.md),
+[SDK de bots](docs/15-sdk-bots.md),
 [interface](docs/12-interface.md), [feuille de route](docs/06-feuille-de-route.md).
 
 Le cloisonnement entre organisations est prouvé par des tests d'intégration contre une vraie base

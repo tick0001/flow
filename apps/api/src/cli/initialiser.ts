@@ -9,32 +9,32 @@ import {
   users,
 } from '@flow/db';
 import { loadEnv, loadEnvFiles } from '../config/env.js';
+import { RightsCatalogService } from '../admin/rights-catalog.service.js';
 import type { RightScope } from '@flow/contracts';
 
 const ARGON2ID = 2;
 
 /**
- * Droits accordes au profil d'administration.
+ * Droits accordes au profil d'administration : **tous ceux du catalogue**, a
+ * leur portee la plus large.
  *
- * `all` partout : c'est le profil qui doit pouvoir tout reparer, y compris se
- * redonner des droits. La portee reste combinee a l'entite active -- « tout »
- * signifie « tout ce que le perimetre de travail laisse voir », jamais « toute
+ * Derives et non ecrits a la main. Une liste figee ici aurait cesse d'etre
+ * complete des le premier droit ajoute au catalogue, et l'oubli ne se serait vu
+ * que le jour ou un administrateur d'une installation neuve se serait heurte a
+ * un refus sur une fonction dont il est cense avoir la charge.
+ *
+ * « La portee la plus large » reste combinee a l'entite active : elle signifie
+ * « tout ce que le perimetre de travail laisse voir », jamais « toute
  * l'installation ».
  */
-const DROITS_ADMINISTRATION: [objet: string, action: string, portee: RightScope][] = [
-  ['entity', 'read', 'all'],
-  ['entity', 'create', 'all'],
-  ['entity', 'update', 'all'],
-  ['entity', 'delete', 'all'],
-  ['user', 'read', 'all'],
-  ['user', 'create', 'all'],
-  ['user', 'update', 'all'],
-  ['user', 'delete', 'all'],
-  ['profile', 'read', 'all'],
-  ['profile', 'create', 'all'],
-  ['profile', 'update', 'all'],
-  ['profile', 'delete', 'all'],
-];
+function droitsAdministration(): { object: string; action: string; scope: RightScope }[] {
+  return new RightsCatalogService().all().map((definition) => ({
+    object: definition.object,
+    action: definition.action,
+    // Le catalogue liste les portees de la plus etroite a la plus large.
+    scope: definition.scopes[definition.scopes.length - 1] ?? 'entity',
+  }));
+}
 
 /**
  * Droits du profil d'observation.
@@ -43,8 +43,10 @@ const DROITS_ADMINISTRATION: [objet: string, action: string, portee: RightScope]
  * qui ne propose qu'un profil pousse a donner l'administration a tout le monde,
  * faute d'alternative sous la main au moment ou l'on cree le deuxieme compte.
  */
-const DROITS_OBSERVATION: [objet: string, action: string, portee: RightScope][] = [
-  ['entity', 'read', 'entity'],
+const DROITS_OBSERVATION: { object: string; action: string; scope: RightScope }[] = [
+  { object: 'entity', action: 'read', scope: 'entity' },
+  { object: 'bot', action: 'read', scope: 'entity' },
+  { object: 'execution', action: 'read', scope: 'own' },
 ];
 
 /**
@@ -109,20 +111,12 @@ async function main(): Promise<void> {
 
       if (!administration || !observation) throw new Error('Les profils n’ont pas pu être créés.');
 
-      await tx.insert(profileRights).values([
-        ...DROITS_ADMINISTRATION.map(([object, action, scope]) => ({
-          profileId: administration.id,
-          object,
-          action,
-          scope,
-        })),
-        ...DROITS_OBSERVATION.map(([object, action, scope]) => ({
-          profileId: observation.id,
-          object,
-          action,
-          scope,
-        })),
-      ]);
+      await tx
+        .insert(profileRights)
+        .values([
+          ...droitsAdministration().map((droit) => ({ profileId: administration.id, ...droit })),
+          ...DROITS_OBSERVATION.map((droit) => ({ profileId: observation.id, ...droit })),
+        ]);
 
       const [compte] = await tx
         .insert(users)

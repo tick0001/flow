@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { botManifestSchema, couvre } from './bots.js';
+import { botManifestSchema } from './bots.js';
 
 const manifesteValide = {
   id: 'exemple.bonjour',
@@ -8,15 +8,6 @@ const manifesteValide = {
   parameters: { type: 'object', properties: {} },
   sdk: 1,
 };
-
-describe('niveaux d’accès', () => {
-  it('ordonne du plus faible au plus fort', () => {
-    expect(couvre('manage', 'execute')).toBe(true);
-    expect(couvre('execute', 'execute')).toBe(true);
-    expect(couvre('view', 'execute')).toBe(false);
-    expect(couvre('none', 'view')).toBe(false);
-  });
-});
 
 describe('manifeste de bot', () => {
   it('accepte un manifeste minimal et remplit les défauts', () => {

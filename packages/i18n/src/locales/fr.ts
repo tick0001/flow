@@ -87,6 +87,22 @@ export const fr = {
     confirmerSuppression: 'Supprimer cette entité ?',
     suppressionImpossible: 'Cette entité porte des sous-entités : supprimez-les d’abord.',
   },
+  bots: {
+    titre: 'Bots',
+    intro:
+      'Les bots déposés sur cette installation. Un bot est du code : son manifeste est produit à sa construction, et le serveur ne lit que ce fichier.',
+    aucun: 'Aucun bot déposé.',
+    aucunAide: 'Déposez un dossier de bot, puis relisez le dossier.',
+    relire: 'Relire le dossier',
+    parametres: 'Paramètres',
+    aucunParametre: 'Aucun paramètre.',
+    obligatoire: 'obligatoire',
+    defaut: 'par défaut',
+    refuse: 'Refusé',
+    lancer: 'Lancer',
+    lancerBientot: 'Le lancement arrive au jalon J3.',
+    par: 'par',
+  },
   comptes: {
     titre: 'Comptes',
     intro:

@@ -1,0 +1,23 @@
+{
+  "name": "@flow/bot-exemple-bonjour",
+  "license": "AGPL-3.0-or-later",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup && flow-bot manifeste dist/index.js",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@flow/bot-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  }
+}

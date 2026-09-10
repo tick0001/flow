@@ -38,6 +38,7 @@
     "concurrently": "^10.0.5",
     "supertest": "^7.2.2",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "@flow/bot-sdk": "workspace:*"
   }
 }

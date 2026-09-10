@@ -9,6 +9,8 @@
 export type {
   Authorization,
   AvailableContext,
+  BotManifest,
+  BotSummary,
   EntityRef,
   ProfileDetail,
   ProfileRef,

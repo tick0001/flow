@@ -71,6 +71,14 @@ const envSchema = z.object({
   /** 32 octets en hexadecimal : chiffrement des secrets stockes en base. */
   ENCRYPTION_KEY: z.string().regex(/^[0-9a-fA-F]{64}$/, '64 caracteres hexadecimaux attendus'),
 
+  /**
+   * Dossier scanne pour les bots deposes.
+   *
+   * Relatif a la racine du depot, ou absolu. L'API n'y lit que des manifestes
+   * JSON ; c'est le worker qui importe les modules.
+   */
+  BOTS_PATH: z.string().min(1).default('./bots'),
+
   DEFAULT_LOCALE: z.enum(['fr', 'en']).default('fr'),
   LOG_LEVEL: z.enum(['error', 'warn', 'log', 'debug', 'verbose']).default('log'),
 

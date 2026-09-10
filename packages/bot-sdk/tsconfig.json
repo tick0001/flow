@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    // `DOM` pour `AbortSignal`, que le SDK expose au bot, et `node` pour l'outil
+    // en ligne de commande. Le paquet ne rend rien dans un navigateur : seules
+    // les declarations de types viennent de `DOM`.
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"]
+}

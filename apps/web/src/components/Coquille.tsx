@@ -15,10 +15,7 @@ import { Badge, Button, Checkbox, Marque, Select } from '@/components/ui/primiti
  * l'ecran un travail quotidien dont on n'a que faire quand on configure.
  */
 
-const LIENS = [
-  { to: '/bots', cle: 'navigation.bots' },
-  { to: '/executions', cle: 'navigation.executions' },
-] as const;
+const LIENS = [{ to: '/bots', cle: 'navigation.bots' }] as const;
 
 function LienBarre({ to, children }: { to: string; children: ReactNode }) {
   return (
