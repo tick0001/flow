@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  // Les tests et leur outillage ne sont pas publies : ils vivent sous `src/`
+  // pour etre types et lintes comme le reste, mais n'ont rien a faire dans
+  // `dist`. La fixture ouvrirait sinon des connexions depuis un paquet installe.
+  "exclude": ["**/*.test.ts", "**/*.spec.ts", "src/test/**"]
+}

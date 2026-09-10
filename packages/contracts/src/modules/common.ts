@@ -32,8 +32,13 @@ export type Health = z.infer<typeof healthSchema>;
 /**
  * Portee d'un droit, toujours combinee a l'entite active.
  * Voir docs/03-entites-droits-securite.md.
+ *
+ * Quatre valeurs et non cinq : pas de portee `group`. Flow& n'a pas de groupes,
+ * et declarer une portee que rien ne sait resoudre reviendrait a offrir un
+ * reglage sans effet -- l'administrateur la choisirait, et rien ne changerait.
+ * Elle s'ajoutera le jour ou les groupes existeront.
  */
-export const rightScopeSchema = z.enum(['own', 'group', 'entity', 'recursive', 'all']);
+export const rightScopeSchema = z.enum(['own', 'entity', 'recursive', 'all']);
 export type RightScope = z.infer<typeof rightScopeSchema>;
 
 /**

@@ -30,6 +30,42 @@ jobs:
     name: Verification
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: flow
+          POSTGRES_PASSWORD: flow
+          POSTGRES_DB: flow
+        # Port standard ici : le decalage a 5433 sert a cohabiter avec les
+        # autres projets de la collection sur un poste, et un travail
+        # d'integration continue est seul sur sa machine.
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U flow -d flow"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://flow:flow@localhost:5432/flow
+      # Role applicatif distinct : c'est lui qui subit le Row-Level Security.
+      # Reutiliser le role proprietaire ferait passer les tests d'isolation sans
+      # rien verifier -- ils tombent tous quand on essaie, et c'est la preuve
+      # qu'ils portent. Le role est cree par la premiere migration.
+      DATABASE_APP_URL: postgres://flow_app:flow_app@localhost:5432/flow
+      REDIS_URL: redis://localhost:6379
+      SESSION_SECRET: secret-de-test-integration
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+
     steps:
       - uses: actions/checkout@v7
 
@@ -41,6 +77,9 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Migrations
+        run: pnpm db:migrate
 
       # La mise en forme d'abord : c'est la verification la moins couteuse, et
       # celle qu'on oublie le plus souvent. La faire echouer en trente secondes
@@ -64,7 +103,3 @@ jobs:
 # « Parcours » (scenarios dans un vrai navigateur) au jalon J9. Les declarer
 # maintenant rendrait l'integration continue rouge en permanence, ce qui est la
 # meilleure facon d'apprendre a ne plus la regarder.
-#
-# PostgreSQL et Redis n'apparaissent pas non plus tant qu'aucun test ne les
-# interroge : un service demarre pour rien allonge chaque execution sans rien
-# verifier.

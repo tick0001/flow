@@ -1,0 +1,69 @@
+name: flow
+
+# Services de developpement uniquement.
+#
+# L'API, le worker et l'interface tournent sur la machine, pas ici : on les
+# redemarre trop souvent pour passer par une image. Ce fichier ne porte que ce
+# qu'on ne veut pas installer a la main.
+#
+# Les ports sont **decales** par rapport aux ports standards : 5433 et 6380
+# plutot que 5432 et 6379. Flow& appartient a une collection, et les autres
+# projets ouvrent les memes services -- Tick& tient deja 5432. Sans ce decalage,
+# travailler sur deux projets de la collection le meme jour obligerait a en
+# eteindre un, et l'erreur (« port is already allocated ») arrive au moment ou
+# l'on demarre, pas au moment ou l'on choisit.
+#
+# A l'interieur du reseau Compose les services gardent leurs ports habituels :
+# seul le mappage vers la machine est decale.
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: flow-postgres
+    restart: unless-stopped
+    # `random_page_cost` : PostgreSQL suppose par defaut un disque a plateaux,
+    # ou une lecture au hasard coute quatre fois une lecture sequentielle. Sur
+    # un SSD le rapport est proche de un, et la valeur par defaut pousse le
+    # planificateur a balayer des tables entieres plutot qu'a suivre un index.
+    # A remonter a 4 si les donnees vivent sur un disque a plateaux.
+    command: ['postgres', '-c', 'random_page_cost=1.1']
+    environment:
+      POSTGRES_USER: flow
+      POSTGRES_PASSWORD: flow
+      POSTGRES_DB: flow
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8'
+    ports:
+      - '${FLOW_POSTGRES_PORT:-5433}:5432'
+    volumes:
+      # PostgreSQL 18 stocke les donnees dans un sous-dossier par version
+      # majeure : le volume se monte sur /var/lib/postgresql, et non plus sur
+      # .../data comme dans les versions precedentes.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U flow -d flow']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    container_name: flow-redis
+    restart: unless-stopped
+    # `appendonly` : la file porte l'intention d'executer, et l'etat vit en
+    # base -- un vidage de Redis ne perd donc aucun historique. Il perdrait en
+    # revanche les executions en attente, ce qu'une journalisation evite pour
+    # le prix d'un `fsync` par seconde.
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${FLOW_REDIS_PORT:-6380}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
+  redis-data:
