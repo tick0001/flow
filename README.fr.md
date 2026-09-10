@@ -56,7 +56,7 @@ pnpm install
 pnpm --filter @flow/web dev
 ```
 
-Puis <http://localhost:5173>, qui affiche le nuancier — les jetons de la direction artistique et les
+Puis <http://localhost:5273>, qui affiche le nuancier — les jetons de la direction artistique et les
 briques d'interface, dans les deux thèmes. C'est tout ce qu'il y a à voir à ce stade, et c'est
 volontairement dit plutôt que déguisé en application.
 

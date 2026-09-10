@@ -56,7 +56,7 @@ pnpm install
 pnpm --filter @flow/web dev
 ```
 
-Then <http://localhost:5173>, which shows the swatch page — the design tokens and the interface
+Then <http://localhost:5273>, which shows the swatch page — the design tokens and the interface
 building blocks, in both themes. That is all there is to see at this stage, and it is said plainly
 rather than dressed up as an application.
 

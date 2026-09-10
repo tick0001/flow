@@ -11,12 +11,12 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5273,
     proxy: {
       // L'interface parle a l'API par le meme domaine en developpement : les
       // cookies de session sont ainsi traites exactement comme en production.
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3100',
         changeOrigin: true,
       },
       // Le flux temps reel d'une execution. Declare a part parce qu'il faut
@@ -24,7 +24,7 @@ export default defineConfig({
       // comme une requete HTTP ordinaire et le WebSocket ne s'ouvre jamais --
       // en developpement seulement, ce qui est le pire cas de figure.
       '/api/ws': {
-        target: 'ws://localhost:3000',
+        target: 'ws://localhost:3100',
         ws: true,
         changeOrigin: true,
       },
