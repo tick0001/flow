@@ -106,6 +106,7 @@ export class AuthService {
         profileId: choisi.profileId,
         entityId: choisi.entityId,
         includeSubEntities: choisi.isRecursive,
+        mustChangePassword: compte.mustChangePassword,
       },
       metadata,
     );

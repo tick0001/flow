@@ -48,6 +48,7 @@ export class ContextMiddleware implements NestMiddleware {
       includeSubEntities: perimetre.includeSubEntities,
       scope: perimetre.scope,
       locale: negotiateLocale(request.headers['accept-language']),
+      mustChangePassword: session.mustChangePassword,
     };
 
     runWithContext(context, () => {

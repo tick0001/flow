@@ -5,7 +5,9 @@ import '@/lib/i18n';
 import { SessionProvider, useSession } from '@/lib/session';
 import { Coquille } from '@/components/Coquille';
 import { Connexion } from '@/pages/Connexion';
+import { Comptes } from '@/pages/Comptes';
 import { Entites } from '@/pages/Entites';
+import { Profils } from '@/pages/Profils';
 import { MotDePasse } from '@/pages/MotDePasse';
 import { Nuancier } from '@/pages/Nuancier';
 
@@ -57,6 +59,8 @@ function Racine() {
     <Routes>
       <Route element={<Coquille />}>
         <Route path="/entites" element={<Entites />} />
+        <Route path="/comptes" element={<Comptes />} />
+        <Route path="/profils" element={<Profils />} />
         <Route path="/nuancier" element={<Nuancier />} />
         {/* Les bots et les executions arrivent aux jalons J2 et J3. En attendant,
             la racine mene aux entites : une route qui n'existe pas encore vaut

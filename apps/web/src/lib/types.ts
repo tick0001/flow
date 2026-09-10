@@ -7,9 +7,14 @@
  * nulle part ailleurs.
  */
 export type {
+  Authorization,
   AvailableContext,
   EntityRef,
+  ProfileDetail,
   ProfileRef,
+  ProfileRight,
+  RightDefinition,
   RightScope,
   SessionContext,
+  UserSummary,
 } from '@flow/contracts';

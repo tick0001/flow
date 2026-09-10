@@ -1,4 +1,5 @@
 import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { ContextMiddleware } from './context.middleware.js';
@@ -8,6 +9,7 @@ import { RightsService } from './rights.service.js';
 import { ScopeService } from './scope.service.js';
 import { SessionService } from './session.service.js';
 import { AuthenticatedGuard } from './guards/authenticated.guard.js';
+import { PasswordChangeGuard } from './guards/password-change.guard.js';
 import { RightsGuard } from './guards/rights.guard.js';
 
 @Module({
@@ -21,6 +23,10 @@ import { RightsGuard } from './guards/rights.guard.js';
     LoginThrottleService,
     AuthenticatedGuard,
     RightsGuard,
+    // Globale : elle doit couvrir les routes qu'on ajoutera demain sans que
+    // personne n'ait a y penser. Une liste de routes a proteger se serait
+    // desynchronisee des la premiere.
+    { provide: APP_GUARD, useClass: PasswordChangeGuard },
   ],
   exports: [AuthService, PasswordService, ScopeService, RightsService, SessionService],
 })

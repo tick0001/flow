@@ -85,6 +85,7 @@ export class AuthController {
       profileId: context.profileId,
       entityId: context.entityId,
       includeSubEntities: context.includeSubEntities,
+      mustChangePassword: context.mustChangePassword,
     });
   }
 
@@ -100,6 +101,7 @@ export class AuthController {
       profileId: context.profileId,
       entityId: context.entityId,
       includeSubEntities: context.includeSubEntities,
+      mustChangePassword: context.mustChangePassword,
     };
 
     await this.auth.switchContext(session, corps);

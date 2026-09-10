@@ -1,6 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
-import { and, eq, isNull, sessions, sql } from '@flow/db';
+import { and, eq, isNull, sessions, sql, users } from '@flow/db';
 import { DatabaseService } from '../database/database.service.js';
 
 /** Duree de vie glissante d'une session inactive. */
@@ -12,6 +12,14 @@ export interface SessionRecord {
   profileId: number;
   entityId: number;
   includeSubEntities: boolean;
+  /**
+   * Le compte doit-il changer de mot de passe avant toute autre chose ?
+   *
+   * Porte par la session et non relu a la demande : la garde qui bloque le
+   * reste de l API le consulte a chaque requete, et une requete de plus par
+   * appel pour un booleen serait payee par tout le monde.
+   */
+  mustChangePassword: boolean;
 }
 
 export interface IssuedSession extends SessionRecord {
@@ -65,11 +73,28 @@ export class SessionService {
       profileId: created.profileId,
       entityId: created.entityId,
       includeSubEntities: created.includeSubEntities,
+      mustChangePassword: record.mustChangePassword,
       cookieValue: `${created.id}.${secret}`,
     };
   }
 
-  /** Resout un cookie en session valide, en prolongeant sa duree de vie. */
+  /**
+   * Resout un cookie en session valide, en prolongeant sa duree de vie.
+   *
+   * Le compte est relu **a chaque requete**, joint a la session, et pour deux
+   * raisons qui ne se voient pas au premier regard :
+   *
+   *  - **Desactiver ou supprimer un compte doit fermer ses sessions ouvertes.**
+   *    Sans cette verification, quelqu'un dont on retire l'acces continue de
+   *    travailler jusqu'a l'expiration de son jeton -- soit une demi-journee --
+   *    et l'administrateur qui vient de le desactiver n'en sait rien.
+   *  - **L'obligation de changer de mot de passe doit valoir pour l'API**, pas
+   *    seulement pour l'interface. Un mot de passe pose par un administrateur
+   *    est connu de lui : le laisser servir indefiniment a qui appelle l'API
+   *    directement viderait l'obligation de son sens.
+   *
+   * Une jointure et non une requete de plus : c'est le meme aller-retour.
+   */
   async resolve(cookieValue: string | undefined): Promise<SessionRecord | null> {
     if (!cookieValue) return null;
 
@@ -81,18 +106,26 @@ export class SessionService {
 
     return this.db.asOwner(async (tx) => {
       const [found] = await tx
-        .select()
+        .select({
+          session: sessions,
+          isActive: users.isActive,
+          deletedAt: users.deletedAt,
+          mustChangePassword: users.mustChangePassword,
+        })
         .from(sessions)
+        .innerJoin(users, eq(users.id, sessions.userId))
         .where(and(eq(sessions.id, id), isNull(sessions.revokedAt)));
 
-      if (!found || found.expiresAt.getTime() < Date.now()) return null;
+      if (!found || found.session.expiresAt.getTime() < Date.now()) return null;
 
       // Comparaison a temps constant : une comparaison naive laisserait fuir la
       // longueur du prefixe commun, donc le secret, octet par octet.
-      const expected = Buffer.from(found.tokenHash, 'utf8');
+      const expected = Buffer.from(found.session.tokenHash, 'utf8');
       const actual = Buffer.from(digest(secret), 'utf8');
 
       if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
+
+      if (!found.isActive || found.deletedAt !== null) return null;
 
       await tx
         .update(sessions)
@@ -100,11 +133,12 @@ export class SessionService {
         .where(eq(sessions.id, id));
 
       return {
-        id: found.id,
-        userId: found.userId,
-        profileId: found.profileId,
-        entityId: found.entityId,
-        includeSubEntities: found.includeSubEntities,
+        id: found.session.id,
+        userId: found.session.userId,
+        profileId: found.session.profileId,
+        entityId: found.session.entityId,
+        includeSubEntities: found.session.includeSubEntities,
+        mustChangePassword: found.mustChangePassword,
       };
     });
   }
@@ -121,19 +155,21 @@ export class SessionService {
   async resolveById(sessionId: string): Promise<SessionRecord | null> {
     const [trouvee] = await this.db.asOwner((tx) =>
       tx
-        .select()
+        .select({ session: sessions, mustChangePassword: users.mustChangePassword })
         .from(sessions)
+        .innerJoin(users, eq(users.id, sessions.userId))
         .where(and(eq(sessions.id, sessionId), isNull(sessions.revokedAt))),
     );
 
     if (!trouvee) return null;
 
     return {
-      id: trouvee.id,
-      userId: trouvee.userId,
-      profileId: trouvee.profileId,
-      entityId: trouvee.entityId,
-      includeSubEntities: trouvee.includeSubEntities,
+      id: trouvee.session.id,
+      userId: trouvee.session.userId,
+      profileId: trouvee.session.profileId,
+      entityId: trouvee.session.entityId,
+      includeSubEntities: trouvee.session.includeSubEntities,
+      mustChangePassword: trouvee.mustChangePassword,
     };
   }
 

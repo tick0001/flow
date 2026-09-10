@@ -138,12 +138,18 @@ export function Coquille() {
             ))}
           </div>
 
-          {droit('entity', 'read') && (
+          {/* La section n'apparait que si l'on a au moins un droit dedans :
+              une rubrique vide invite a cliquer sur ce qui refusera. */}
+          {(droit('entity', 'read') ?? droit('user', 'read') ?? droit('profile', 'read')) && (
             <div className="space-y-0.5">
               <p className="text-faint px-3 pb-1 text-[11px] font-semibold tracking-wider uppercase">
                 {t('navigation.reglages')}
               </p>
-              <LienBarre to="/entites">{t('entites.titre')}</LienBarre>
+              {droit('entity', 'read') && <LienBarre to="/entites">{t('entites.titre')}</LienBarre>}
+              {droit('user', 'read') && <LienBarre to="/comptes">{t('comptes.titre')}</LienBarre>}
+              {droit('profile', 'read') && (
+                <LienBarre to="/profils">{t('profils.titre')}</LienBarre>
+              )}
             </div>
           )}
         </nav>

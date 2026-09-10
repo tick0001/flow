@@ -14,6 +14,8 @@ export interface FlowContext extends RequestContext {
   entityId: number;
   includeSubEntities: boolean;
   locale: string;
+  /** Le compte doit changer de mot de passe : tout le reste de l API lui est ferme. */
+  mustChangePassword: boolean;
 }
 
 const stockage = new AsyncLocalStorage<FlowContext>();
