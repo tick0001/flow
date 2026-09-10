@@ -14,14 +14,20 @@ Monorepo, outillage, intégration continue, jetons de la direction artistique, d
 Se termine quand `pnpm install`, `pnpm lint`, `pnpm typecheck`, `pnpm test` et `pnpm build`
 réussissent sur un clone vierge.
 
-## J1 — La base, les entités et la session
+## J1 — La base, les entités, la session et les langues
 
 Schéma Drizzle du cœur, migrations, arbre d'entités en `ltree`, politiques Row-Level Security,
-utilisateurs, profils, matrice de droits, authentification locale et session par cookie.
+utilisateurs, profils, matrice de droits, authentification locale et session par cookie. Et
+`@flow/i18n` : français et anglais, dans l'interface comme dans les messages du serveur.
 
 Se termine quand un test d'intégration prouve, contre une vraie base PostgreSQL, qu'un compte d'une
 branche ne voit pas les lignes d'une autre — et que le refus vient de la base, pas d'une clause
 `WHERE`.
+
+**Les langues arrivent ici et non à la fin**, contrairement à une première version de cette feuille
+de route. Rétrofiter des traductions revient à rouvrir chaque écran déjà écrit pour en extraire les
+chaînes, ce qui est long, sans intérêt, et laisse toujours des oublis que personne ne voit avant un
+utilisateur. Poser le dispositif avant le premier écran ne coûte presque rien.
 
 ## J2 — Le registre des bots
 
@@ -79,10 +85,10 @@ un écran.
 Se termine quand le plugin de référence exerce chaque point d'extension et tourne en test
 d'intégration permanent.
 
-## J9 — L'annuaire et les langues
+## J9 — L'annuaire et les parcours
 
-LDAP / Active Directory avec import, synchronisation et règles d'affectation. Interface et courriels
-en français et en anglais. Parcours de bout en bout dans un vrai navigateur.
+LDAP / Active Directory avec import, synchronisation et règles d'affectation (groupe d'annuaire →
+profil + entité). Parcours de bout en bout dans un vrai navigateur.
 
 Se termine quand un compte d'annuaire se connecte, hérite de ses droits par son groupe, et que les
 parcours couvrent la connexion, le cloisonnement, le cycle de vie d'une exécution et la
