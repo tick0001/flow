@@ -354,6 +354,12 @@ export function Pastille({ ton = 'neutre', children }: { ton?: Ton; children: Re
  *
  * Cerné d'un filet et non d'une ombre, comme tout le reste : c'est un encadré de
  * document, pas une notification qui flotte.
+ *
+ * **Le ton décide du rôle d'accessibilité.** Un message critique est annoncé
+ * immédiatement par un lecteur d'écran, les autres ne le sont pas. Laisser ce
+ * choix à chaque appel garantissait qu'il serait oublié quelque part — et un
+ * message d'erreur qu'on n'entend pas est un message qui n'existe pas pour qui
+ * ne regarde pas l'écran.
  */
 export function Notice({
   ton = 'info',
@@ -364,8 +370,14 @@ export function Notice({
   className?: string;
   children: ReactNode;
 }) {
+  const critique = ton === 'critique';
+
   return (
-    <div className={cn('rounded-[2px] border px-3 py-2 text-sm', TONS[ton], className)}>
+    <div
+      role={critique ? 'alert' : undefined}
+      aria-live={critique ? 'assertive' : undefined}
+      className={cn('rounded-[2px] border px-3 py-2 text-sm', TONS[ton], className)}
+    >
       {children}
     </div>
   );
