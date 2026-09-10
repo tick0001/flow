@@ -1,0 +1,51 @@
+{
+  "name": "flow",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Flow& - automatisation navigateur open source, auto-hebergee",
+  "author": "tick0001 <tick0001@proton.me>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tick0001/flow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tick0001/flow/issues"
+  },
+  "homepage": "https://flowand.fr",
+  "license": "AGPL-3.0-or-later",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,yaml,yml}\"",
+    "services:up": "docker compose -f docker/compose.yaml up -d",
+    "services:down": "docker compose -f docker/compose.yaml down",
+    "services:reset": "docker compose -f docker/compose.yaml down -v && pnpm services:up",
+    "db:migrate": "pnpm --filter @flow/db db:migrate",
+    "db:seed": "pnpm --filter @flow/api db:seed",
+    "db:init": "pnpm --filter @flow/api db:init",
+    "db:reset": "pnpm services:reset && pnpm db:migrate && pnpm db:seed",
+    "navigateurs": "pnpm --filter @flow/worker exec playwright install --with-deps chromium",
+    "openapi": "pnpm --filter @flow/api openapi",
+    "images": "docker build -f docker/api.Dockerfile -t flow-api:local . && docker build -f docker/worker.Dockerfile -t flow-worker:local . && docker build -f docker/web.Dockerfile -t flow-web:local ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.4.1",
+    "@vitest/coverage-v8": "^5.0.0",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.6",
+    "turbo": "^2.10.12",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.69.0",
+    "vitest": "^5.0.0"
+  }
+}

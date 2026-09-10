@@ -1,0 +1,20 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'bots/*'
+  - 'plugins/*'
+
+# Scripts d'installation explicitement autorises. Tout le reste est ignore :
+# une dependance transitive ne doit pas pouvoir executer du code a l'installation
+# sans decision consciente.
+allowBuilds:
+  esbuild: true
+  # Playwright telecharge ses navigateurs par son script d'installation. Sans
+  # cette autorisation, `pnpm install` reussit et le worker echoue au premier
+  # run sur un executable absent -- une panne dont la cause est loin du symptome.
+  playwright: true
+  playwright-core: true
+  # Accelerateur natif facultatif de msgpackr, utilise par BullMQ. La
+  # bibliotheque retombe sur une implementation JavaScript sans lui, et le
+  # gain ne justifie pas une compilation native a l'installation.
+  msgpackr-extract: false
