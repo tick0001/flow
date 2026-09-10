@@ -1,0 +1,343 @@
+@import 'tailwindcss';
+
+/**
+ * Sources supplementaires a scanner.
+ *
+ * Les bots et les plugins ecrivent leurs classes dans leur propre paquet, que
+ * Tailwind n'inspecte pas : sans cette declaration, l'ecran d'un plugin sortirait
+ * sans aucun style, et son auteur chercherait longtemps pourquoi.
+ */
+@source '../../../plugins';
+@source '../../../bots';
+
+/**
+ * Variante sombre a deux entrees.
+ *
+ * `data-theme` sur la racine, quand l'utilisateur a choisi explicitement, et la
+ * preference systeme sinon. Ne garder que la premiere rendrait le theme sombre
+ * inatteignable tant qu'aucun selecteur n'existe ; ne garder que la seconde
+ * empecherait de choisir autre chose que son systeme.
+ */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
+
+/**
+ * L'identite tient dans ce fichier.
+ *
+ * Flow& est un instrument de travail : on y lance des executions, on y lit des
+ * journaux denses, on y cherche pourquoi quelque chose a casse. L'ecriture
+ * visuelle est celle de la collection tick& -- l'atelier : papier, encre, filets,
+ * une seule couleur de signal.
+ *
+ * Trois partis pris, et chacun s'oppose a ce que produisent les bibliotheques
+ * par defaut :
+ *
+ *  1. **Le fond est du papier, pas du gris ecran.** Un gris froid neutre est le
+ *     reglage par defaut de tout le monde ; un blanc casse chaud donne une
+ *     assise a la page et repose l'oeil sur huit heures.
+ *
+ *  2. **Aucune ombre floue.** La separation se fait au filet d'un pixel, comme
+ *     sur un plan technique. L'ombre portee douce est la signature de l'epoque :
+ *     elle rend tout flottant, et rien n'a de bord.
+ *
+ *  3. **Une seule couleur de signal, rare.** Le violet ne sert qu'a ce sur quoi
+ *     on agit. Une interface ou trois couleurs se disputent l'attention n'en
+ *     dirige aucune.
+ *
+ * Ce qui distingue Flow& de Tick& dans la collection est **la seule couleur de
+ * marque** : violet encre ici, vermillon la-bas. Tout le reste -- neutres,
+ * geometrie, ombres, jetons de sens -- est commun, et doit le rester : c'est ce
+ * qui fait qu'on reconnait deux outils de la meme famille.
+ *
+ * Les noms disent le role, pas la teinte : `surface` reste `surface` le jour ou
+ * le fond change. `inline` fait pointer l'utilitaire directement sur la
+ * propriete personnalisee, si bien qu'aucune page n'ecrit `dark:` et qu'une
+ * couleur ne peut plus diverger d'un ecran a l'autre.
+ */
+@theme inline {
+  --font-sans: 'Archivo Variable', 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Code', monospace;
+
+  /* Fonds, du plus recule au plus avance. */
+  --color-canvas: var(--flow-canvas);
+  --color-surface: var(--flow-surface);
+  --color-sunken: var(--flow-sunken);
+  --color-raised: var(--flow-raised);
+
+  /* Traits. */
+  --color-line: var(--flow-line);
+  --color-line-strong: var(--flow-line-strong);
+
+  /* Textes, du plus lisible au plus discret. */
+  --color-ink: var(--flow-ink);
+  --color-muted: var(--flow-muted);
+  --color-faint: var(--flow-faint);
+
+  /* Couleur de marque. */
+  --color-brand: var(--flow-brand);
+  --color-brand-hover: var(--flow-brand-hover);
+  --color-brand-soft: var(--flow-brand-soft);
+  --color-brand-ink: var(--flow-brand-ink);
+  --color-on-brand: var(--flow-on-brand);
+
+  /* Couleurs de sens. */
+  --color-positive: var(--flow-positive);
+  --color-positive-soft: var(--flow-positive-soft);
+  --color-positive-ink: var(--flow-positive-ink);
+  --color-caution: var(--flow-caution);
+  --color-caution-soft: var(--flow-caution-soft);
+  --color-caution-ink: var(--flow-caution-ink);
+  --color-critical: var(--flow-critical);
+  --color-critical-soft: var(--flow-critical-soft);
+  --color-critical-ink: var(--flow-critical-ink);
+  --color-info: var(--flow-info);
+  --color-info-soft: var(--flow-info-soft);
+  --color-info-ink: var(--flow-info-ink);
+
+  /**
+   * Geometrie : presque droite.
+   *
+   * L'echelle entiere est ramenee a quelques pixels, et non le seul rayon des
+   * cartes. Les pages ecrivent `rounded-lg` a des centaines d'endroits : les
+   * reprendre une a une aurait ete long et aurait laisse des oublis, alors que
+   * redefinir l'echelle change tout d'un coup et sans exception.
+   *
+   * `rounded-full` reste rond : les pastilles d'etat et les avatars sont des
+   * points, pas des boites.
+   */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+  --radius-2xl: 8px;
+  --radius-card: 3px;
+
+  /**
+   * Ombres sans flou.
+   *
+   * Un decalage franc d'un pixel, jamais un halo. Le flou fait flotter les
+   * elements les uns au-dessus des autres ; le filet les pose sur la page.
+   */
+  --shadow-card: 0 1px 0 0 var(--flow-ombre);
+  --shadow-raised: 0 2px 0 0 var(--flow-ombre);
+  --shadow-overlay: 0 0 0 1px var(--flow-line-strong), 4px 4px 0 0 var(--flow-ombre);
+}
+
+/**
+ * Palette claire : papier et encre.
+ *
+ * Les neutres sont chauds, jamais bleutes -- comme dans Tick&, et pour la meme
+ * raison : un gris froid a cote d'une couleur saturee donne l'aspect delave
+ * d'une capture d'ecran.
+ *
+ * Le violet de marque ne croise aucun jeton de sens. C'est ce qui a decide de la
+ * teinte : un bleu se serait confondu avec `info`, un vert avec `positive`, un
+ * ocre avec `caution` -- et un badge d'information aurait alors ressemble a un
+ * bouton d'action.
+ */
+:root {
+  color-scheme: light dark;
+
+  --flow-canvas: #f7f4ee;
+  --flow-surface: #fffdf9;
+  --flow-sunken: #efeae1;
+  --flow-raised: #ffffff;
+
+  --flow-line: #e2dbcf;
+  --flow-line-strong: #c6bcaa;
+  --flow-ombre: rgb(20 18 15 / 0.07);
+
+  --flow-ink: #14120f;
+  --flow-muted: #5c564c;
+  --flow-faint: #8b8274;
+
+  --flow-brand: #4c3d99;
+  --flow-brand-hover: #3d3080;
+  --flow-brand-soft: #ece9f7;
+  --flow-brand-ink: #352a6b;
+  --flow-on-brand: #fffdf9;
+
+  --flow-positive: #2f7a4d;
+  --flow-positive-soft: #e6f0e7;
+  --flow-positive-ink: #1e5334;
+
+  --flow-caution: #b0730b;
+  --flow-caution-soft: #f8eedb;
+  --flow-caution-ink: #7a4d06;
+
+  --flow-critical: #9b1c1c;
+  --flow-critical-soft: #f6e6e4;
+  --flow-critical-ink: #7a1414;
+
+  --flow-info: #2c5f8a;
+  --flow-info-soft: #e5ecf3;
+  --flow-info-ink: #1e4463;
+}
+
+/**
+ * Palette sombre : l'atelier le soir.
+ *
+ * Le fond n'est ni noir pur ni ardoise bleue mais un brun tres sombre : c'est le
+ * meme papier, eteint. Les teintes de sens y sont remontees en luminosite, sans
+ * quoi elles disparaitraient.
+ *
+ * Le violet aussi : `#4c3d99` sur `#14120e` tombe sous le contraste lisible d'un
+ * texte. Le jeton clair du theme sombre n'est donc pas le meme violet eclairci
+ * mecaniquement, il est choisi pour tenir sur ce fond-la.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --flow-canvas: #14120e;
+    --flow-surface: #1c1915;
+    --flow-sunken: #100e0b;
+    --flow-raised: #232019;
+
+    --flow-line: #322d25;
+    --flow-line-strong: #4b4437;
+    --flow-ombre: rgb(0 0 0 / 0.5);
+
+    --flow-ink: #f0ece3;
+    --flow-muted: #a79f90;
+    --flow-faint: #7b7365;
+
+    --flow-brand: #8b7ce0;
+    --flow-brand-hover: #a397e9;
+    --flow-brand-soft: #1e1935;
+    --flow-brand-ink: #b7aeef;
+    --flow-on-brand: #14120e;
+
+    --flow-positive: #5fa87a;
+    --flow-positive-soft: #16241a;
+    --flow-positive-ink: #8fc7a3;
+
+    --flow-caution: #d29b3c;
+    --flow-caution-soft: #2a2010;
+    --flow-caution-ink: #e5bd76;
+
+    --flow-critical: #d15b52;
+    --flow-critical-soft: #2c1512;
+    --flow-critical-ink: #e59189;
+
+    --flow-info: #6698c2;
+    --flow-info-soft: #14202b;
+    --flow-info-ink: #97bcd9;
+  }
+}
+
+[data-theme='dark'] {
+  --flow-canvas: #14120e;
+  --flow-surface: #1c1915;
+  --flow-sunken: #100e0b;
+  --flow-raised: #232019;
+
+  --flow-line: #322d25;
+  --flow-line-strong: #4b4437;
+  --flow-ombre: rgb(0 0 0 / 0.5);
+
+  --flow-ink: #f0ece3;
+  --flow-muted: #a79f90;
+  --flow-faint: #7b7365;
+
+  --flow-brand: #8b7ce0;
+  --flow-brand-hover: #a397e9;
+  --flow-brand-soft: #1e1935;
+  --flow-brand-ink: #b7aeef;
+  --flow-on-brand: #14120e;
+
+  --flow-positive: #5fa87a;
+  --flow-positive-soft: #16241a;
+  --flow-positive-ink: #8fc7a3;
+
+  --flow-caution: #d29b3c;
+  --flow-caution-soft: #2a2010;
+  --flow-caution-ink: #e5bd76;
+
+  --flow-critical: #d15b52;
+  --flow-critical-soft: #2c1512;
+  --flow-critical-ink: #e59189;
+
+  --flow-info: #6698c2;
+  --flow-info-soft: #14202b;
+  --flow-info-ink: #97bcd9;
+}
+
+body {
+  @apply bg-canvas text-ink antialiased;
+}
+
+@layer base {
+  /**
+   * Anneau de focus unique, pose sur le document.
+   *
+   * Le poser ici plutot que sur chaque composant garantit qu'aucun controle
+   * n'echappe au clavier : un champ ajoute demain le recevra sans que personne
+   * n'y pense. `:focus-visible` et non `:focus`, pour ne pas cerner ce que la
+   * souris vient de cliquer.
+   */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
+
+  ::selection {
+    background-color: var(--flow-brand-soft);
+    color: var(--flow-brand-ink);
+  }
+
+  /**
+   * Chiffres tabulaires dans les tableaux.
+   *
+   * Les chiffres proportionnels font onduler une colonne de durees : l'oeil ne
+   * peut plus comparer deux lignes sans les lire. Un outil dont le metier est de
+   * montrer combien de temps a pris chaque execution ne peut pas se le
+   * permettre.
+   */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /**
+   * Titres en graisse marquee et chasse resserree.
+   *
+   * Archivo tient bien le gras ; c'est ce qui donne au titre son autorite sans
+   * qu'on ait besoin de l'agrandir, et donc sans manger la place des donnees.
+   */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
+  }
+
+  /* Barres de defilement discretes, accordees au theme. */
+  * {
+    scrollbar-color: var(--flow-line-strong) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+/**
+ * Le journal d'execution.
+ *
+ * Le seul endroit de l'application qui appelle une écriture de terminal, et il la
+ * merite : c'est du texte machine, horodate, dense, que l'on parcourt en cherchant
+ * une ligne. Fond enfonce plutot que surface, chiffres et texte a chasse fixe,
+ * et l'horodatage en retrait pour qu'il serve de repere sans se lire.
+ */
+@layer components {
+  .journal {
+    @apply bg-sunken border-line text-ink overflow-y-auto border font-mono text-xs leading-relaxed;
+  }
+
+  .journal-heure {
+    @apply text-faint mr-2 select-none;
+  }
+}

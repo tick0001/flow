@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    L'esperluette du nom, en aplat plein.
+
+    Le signe est trace en texte et non en chemin : a la taille d'un favicon la
+    difference ne se voit pas, et un chemin fige aurait cesse de correspondre a
+    la police de l'interface des la premiere retouche typographique.
+
+    Le carre est presque droit -- rayon de 3 px, comme toute la geometrie de la
+    collection. Un cercle ou un carre tres arrondi renverrait a l'icone
+    d'application generique que produit n'importe quel generateur.
+  -->
+  <rect width="32" height="32" rx="3" fill="#4c3d99" />
+  <text
+    x="16"
+    y="16"
+    fill="#fffdf9"
+    font-family="Archivo, ui-sans-serif, system-ui, sans-serif"
+    font-size="22"
+    font-weight="700"
+    text-anchor="middle"
+    dominant-baseline="central"
+  >&amp;</text>
+</svg>
