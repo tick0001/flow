@@ -15,15 +15,19 @@ ITSM, dont Flow& reprend la pile technique, les conventions et l'écriture visue
 
 ## Où en est le projet
 
-**Jalon J0 sur onze.** Le socle tient : le dépôt s'installe, se vérifie et se construit, les
-contrats partagés et la direction artistique sont posés. **Rien ne s'exécute encore** — il n'y a ni
-API, ni base, ni worker, ni bot.
+**Jalon J1 sur onze.** Le socle tient, et le cœur du modèle aussi : l'arbre des entités, le
+Row-Level Security de PostgreSQL, les sessions, les droits, et les deux langues. On se connecte, on
+administre l'arbre. **Aucun bot ne s'exécute encore** — il n'y a ni worker ni SDK de bot, c'est J2
+et J3.
 
 Ce qui est déjà décidé et argumenté vit dans [`docs/`](docs/) :
 [périmètre](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
+[entités, droits et sécurité](docs/03-entites-droits-securite.md),
 [interface](docs/12-interface.md), [feuille de route](docs/06-feuille-de-route.md).
 
-Il n'y a donc rien à installer aujourd'hui, et pas encore de quoi donner un avis d'usage. La
+Le cloisonnement entre organisations est prouvé par des tests d'intégration contre une vraie base
+PostgreSQL : ils échouent tous quand on les pointe sur le rôle propriétaire, et c'est ce qui leur
+donne une valeur. La
 [feuille de route](docs/06-feuille-de-route.md) dit dans quel ordre la suite arrive et à quoi se
 reconnaît chaque étape terminée.
 
@@ -49,16 +53,21 @@ un bot, `@flow/plugin-sdk` pour étendre l'application elle-même.
 
 ## Essayer localement
 
-Prérequis : Node 22 ou plus, pnpm 11.
+Prérequis : Node 22 ou plus, pnpm 11, Docker.
 
 ```bash
 pnpm install
-pnpm --filter @flow/web dev
+cp .env.example .env
+pnpm services:up      # PostgreSQL et Redis, sur des ports décalés
+pnpm db:migrate       # schéma, déclencheurs, politiques RLS
+FLOW_ADMIN_PASSWORD="choisissez-en-un-vrai" pnpm db:init
+pnpm dev              # API sur :3100, interface sur :5273
 ```
 
-Puis <http://localhost:5273>, qui affiche le nuancier — les jetons de la direction artistique et les
-briques d'interface, dans les deux thèmes. C'est tout ce qu'il y a à voir à ce stade, et c'est
-volontairement dit plutôt que déguisé en application.
+Puis <http://localhost:5273>. La première connexion impose un changement de mot de passe.
+
+Les ports sont décalés — 5433, 6380, 3100, 5273 — pour que Flow& et les autres projets de la
+collection tournent côte à côte.
 
 ## Développer
 

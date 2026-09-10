@@ -15,15 +15,17 @@ whose stack, conventions and visual language Flow& shares.
 
 ## Where the project stands
 
-**Milestone J0 of eleven.** The foundation holds: the repository installs, checks and builds, and
-the shared contracts and the design system are in place. **Nothing runs yet** — there is no API, no
-database, no worker, no bot.
+**Milestone J1 of eleven.** The foundation holds, and so does the core of the model: the entity
+tree, PostgreSQL Row-Level Security, sessions, rights, and both languages. You can sign in and
+administer the tree. **No bot runs yet** — there is no worker and no bot SDK; those are J2 and J3.
 
 What is already decided and argued lives in [`docs/`](docs/), in French:
 [functional scope](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
+[entities, rights and security](docs/03-entites-droits-securite.md),
 [interface](docs/12-interface.md), [roadmap](docs/06-feuille-de-route.md).
 
-So there is nothing to install today, and nothing yet to have an opinion about in use. The
+Isolation between organisations is proven by integration tests against a real PostgreSQL database:
+they all fail when pointed at the owner role, which is what makes them worth anything. The
 [roadmap](docs/06-feuille-de-route.md) says in what order the rest arrives, and how each step is
 recognised as finished.
 
@@ -49,16 +51,21 @@ a bot, `@flow/plugin-sdk` to extend the application itself.
 
 ## Try it locally
 
-Requirements: Node 22 or later, pnpm 11.
+Requirements: Node 22 or later, pnpm 11, Docker.
 
 ```bash
 pnpm install
-pnpm --filter @flow/web dev
+cp .env.example .env
+pnpm services:up      # PostgreSQL and Redis, on shifted ports
+pnpm db:migrate       # schema, triggers, RLS policies
+FLOW_ADMIN_PASSWORD='pick-a-real-one' pnpm db:init
+pnpm dev              # API on :3100, interface on :5273
 ```
 
-Then <http://localhost:5273>, which shows the swatch page — the design tokens and the interface
-building blocks, in both themes. That is all there is to see at this stage, and it is said plainly
-rather than dressed up as an application.
+Then <http://localhost:5273>. The first sign-in forces a password change.
+
+Ports are shifted from the usual ones — 5433, 6380, 3100, 5273 — so that Flow& and the other
+projects of the collection can run side by side.
 
 ## Develop
 
