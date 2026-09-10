@@ -1,6 +1,6 @@
 # Feuille de route
 
-Onze jalons, du socle à la publication. Chacun est *livrable* : il se termine sur quelque chose qui
+Onze jalons, du socle à la publication. Chacun est _livrable_ : il se termine sur quelque chose qui
 se lance et qu'on peut éprouver, jamais sur une couche à moitié posée en attendant la suivante.
 
 L'ordre n'est pas négociable sur un point : **l'exécution d'un bot arrive tôt** (J3). C'est la raison

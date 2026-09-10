@@ -1,0 +1,70 @@
+name: CI
+
+# Deux declencheurs, sans doublon.
+#
+# `release/**` n'est PAS listee ici, et c'est le point : une branche de version
+# existe pour porter une pull request. La lister ferait passer chaque commit
+# deux fois — une execution sur la branche, une sur la fusion d'essai — pour un
+# resultat identique.
+#
+# `main` et `develop` y restent : elles ne portent pas de pull request, et leur
+# execution apres fusion verifie les commits tels que le rebase les a reecrits,
+# ce que la fusion d'essai n'avait pas exactement teste.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Rien de ce workflow n'ecrit dans le depot. Le declarer ici plutot que de s'en
+# remettre au reglage par defaut de l'organisation : une pull request venue d'un
+# fork — ou de Dependabot — s'execute alors avec un jeton qui ne peut rien.
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    name: Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # La mise en forme d'abord : c'est la verification la moins couteuse, et
+      # celle qu'on oublie le plus souvent. La faire echouer en trente secondes
+      # vaut mieux qu'apres la construction.
+      - name: Format
+        run: pnpm format:check
+
+      - name: Build
+        run: pnpm build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Types
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
+# Deux travaux manquent encore, et volontairement : « Conteneurs » (construction
+# des images et demarrage de la pile) arrive avec les Dockerfiles au jalon J10,
+# « Parcours » (scenarios dans un vrai navigateur) au jalon J9. Les declarer
+# maintenant rendrait l'integration continue rouge en permanence, ce qui est la
+# meilleure facon d'apprendre a ne plus la regarder.
+#
+# PostgreSQL et Redis n'apparaissent pas non plus tant qu'aucun test ne les
+# interroge : un service demarre pour rien allonge chaque execution sans rien
+# verifier.

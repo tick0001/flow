@@ -78,9 +78,12 @@ dont il dispose. Un run coûte un navigateur, ce qui n'est pas comparable à une
 ### L'annulation traverse deux process
 
 Elle ne peut donc plus être un `CancellationTokenSource` en mémoire. L'API marque l'intention en
-base et la publie ; le worker qui détient l'exécution l'observe et ferme son contexte. Un worker qui
-n'existe plus laisse une exécution orpheline : un balayage la termine en `interrompue` passé un délai
-sans battement de cœur, plutôt que de la laisser `en cours` pour toujours.
+base et la publie ; le worker qui détient l'exécution l'observe et ferme son contexte.
+
+Un worker qui n'existe plus laisse une exécution orpheline. Un balayage la termine passé un délai
+sans battement de cœur, plutôt que de la laisser `running` pour toujours — et il la marque
+`abandoned`, jamais `cancelled` : quelqu'un a interrompu la première, personne n'a demandé la
+seconde. Les confondre effacerait la seule trace d'une panne d'infrastructure.
 
 ## L'API navigateur offerte aux bots
 
