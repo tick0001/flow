@@ -15,7 +15,7 @@ ITSM, dont Flow& reprend la pile technique, les conventions et l'écriture visue
 
 ## Où en est le projet
 
-**Jalon J8 sur onze. L'application s'étend sans qu'on la forke.** On dépose un dossier de bot,
+**Jalon J9 sur onze. L'annuaire authentifie, et les parcours le prouvent.** On dépose un dossier de bot,
 on le lance depuis l'interface avec un formulaire déduit de son schéma, ou **par expression cron**,
 ou **par une clé d'API** depuis une chaîne d'intégration. Il tourne dans un worker séparé qui pilote
 Chromium ; le journal, la progression et la vue en direct du navigateur arrivent poussés par le
@@ -32,14 +32,23 @@ des tâches de fond — et se désinstalle sans laisser de trace. Ses tables hé
 du cœur, par la même fonction PostgreSQL. Il s'exécute en revanche dans le processus de l'API, avec
 ses privilèges : [la note du jalon](docs/21-plugins.md) le dit avant tout le reste.
 
+Un compte d'**annuaire LDAP** se connecte et hérite de ses droits par ses groupes : le plugin dit
+qui est la personne et à quels groupes elle appartient, les règles d'affectation du cœur décident de
+ce que cela vaut. La base locale est interrogée d'abord, toujours — un compte d'administration de
+secours n'est jamais bloqué par un annuaire injoignable.
+
+Quatre **parcours de bout en bout** tournent dans un vrai navigateur, contre la pile réelle :
+connexion, cloisonnement, cycle de vie d'une exécution, planification.
+
 La **description OpenAPI est déduite des contrôleurs** : elle décrit exactement les routes qui
 existent, et un test le vérifie contre le routeur.
 
 Avant lui : l'arbre des entités, le Row-Level Security de PostgreSQL, les sessions, les droits,
 l'administration des comptes, les deux langues, le SDK de bots, l'exécution dans un worker séparé,
-le temps réel, l'historique, la planification, les clés d'API et le pilotage.
+le temps réel, l'historique, la planification, les clés d'API, le pilotage et les plugins.
 
-**Il n'y a pas encore** d'annuaire.
+**Il ne reste** que la publication : images, guides d'installation, sauvegardes et montées de
+version.
 
 Ce qui est déjà décidé et argumenté vit dans [`docs/`](docs/) :
 [périmètre](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
@@ -47,7 +56,7 @@ Ce qui est déjà décidé et argumenté vit dans [`docs/`](docs/) :
 [SDK de bots](docs/15-sdk-bots.md), [cycle d'une exécution](docs/16-cycle-d-execution.md),
 [temps réel](docs/17-temps-reel.md), [historique et stockage](docs/18-historique-et-stockage.md),
 [planification et API](docs/19-planification-et-api.md), [pilotage](docs/20-pilotage.md),
-[plugins](docs/21-plugins.md),
+[plugins](docs/21-plugins.md), [annuaire et parcours](docs/22-annuaire-et-parcours.md),
 [interface](docs/12-interface.md), [feuille de route](docs/06-feuille-de-route.md).
 
 Le cloisonnement entre organisations est prouvé par des tests d'intégration contre une vraie base

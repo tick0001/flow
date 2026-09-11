@@ -15,7 +15,7 @@ whose stack, conventions and visual language Flow& shares.
 
 ## Where the project stands
 
-**Milestone J8 of eleven. The application extends without being forked.** Drop a bot folder, launch
+**Milestone J9 of eleven. The directory authenticates, and the journeys prove it.** Drop a bot folder, launch
 it from the interface through a form derived from its schema, or **on a cron expression**, or **with
 an API key** from a CI pipeline. It runs in a separate worker driving Chromium; the log, the
 progress and the live browser view are pushed by the server. When it breaks, the screenshot at the
@@ -31,14 +31,22 @@ uninstalls without leaving a trace. Its tables inherit the core's isolation, thr
 PostgreSQL function. It does run inside the API process, with its privileges:
 [the milestone note](docs/21-plugins.md) says so before anything else.
 
+An **LDAP directory** account signs in and inherits its rights from its groups: the plugin says who
+the person is and which groups they belong to, the core's assignment rules decide what that is
+worth. The local database is queried first, always — a break-glass administrator account is never
+locked out by an unreachable directory.
+
+Four **end-to-end journeys** run in a real browser against the real stack: sign-in, isolation,
+execution lifecycle, scheduling.
+
 The **OpenAPI description is derived from the controllers**: it describes exactly the routes that
 exist, and a test checks it against the router.
 
 Before it: the entity tree, PostgreSQL Row-Level Security, sessions, rights, account
 administration, both languages, the bot SDK, execution in a separate worker, real time, history,
-scheduling, API keys and insights.
+scheduling, API keys, insights and plugins.
 
-**There is not yet** directory integration.
+**What is left** is publishing: images, installation guides, backups and upgrades.
 
 What is already decided and argued lives in [`docs/`](docs/), in French:
 [functional scope](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
@@ -46,7 +54,7 @@ What is already decided and argued lives in [`docs/`](docs/), in French:
 [bot SDK](docs/15-sdk-bots.md), [execution lifecycle](docs/16-cycle-d-execution.md),
 [real time](docs/17-temps-reel.md), [history and storage](docs/18-historique-et-stockage.md),
 [scheduling and API](docs/19-planification-et-api.md), [insights](docs/20-pilotage.md),
-[plugins](docs/21-plugins.md),
+[plugins](docs/21-plugins.md), [directory and journeys](docs/22-annuaire-et-parcours.md),
 [interface](docs/12-interface.md), [roadmap](docs/06-feuille-de-route.md).
 
 Isolation between organisations is proven by integration tests against a real PostgreSQL database:

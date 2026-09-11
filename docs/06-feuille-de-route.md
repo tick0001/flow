@@ -119,11 +119,20 @@ plutôt que d'être posées ici sans implémentation qui les éprouve.
 ## J9 — L'annuaire et les parcours
 
 LDAP / Active Directory avec import, synchronisation et règles d'affectation (groupe d'annuaire →
-profil + entité). Parcours de bout en bout dans un vrai navigateur.
+profil + entité). Parcours de bout en bout dans un vrai navigateur. Voir
+[l'annuaire et les parcours](22-annuaire-et-parcours.md).
 
 Se termine quand un compte d'annuaire se connecte, hérite de ses droits par son groupe, et que les
 parcours couvrent la connexion, le cloisonnement, le cycle de vie d'une exécution et la
 planification.
+
+**LDAP est un plugin**, comme le périmètre l'annonçait : l'écrire dans le cœur aurait fait mentir
+cette phrase, et aurait posé OIDC ou SAML comme un nouveau chantier du cœur. Le plugin dit qui est la
+personne et à quels groupes elle appartient ; le cœur, seul, décide de ce que cela vaut.
+
+L'import et la synchronisation périodiques ne sont pas là : les comptes sont provisionnés à la
+volée, ce qui suffit à travailler. Ce qui manque est la révocation d'un compte parti avant sa
+prochaine connexion — une tâche de fond du plugin la fermera.
 
 ## J10 — La publication
 
