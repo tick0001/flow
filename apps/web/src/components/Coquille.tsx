@@ -18,6 +18,7 @@ import { Badge, Button, Checkbox, Marque, Select } from '@/components/ui/primiti
 const LIENS = [
   { to: '/bots', cle: 'navigation.bots', droit: ['bot', 'read'] },
   { to: '/executions', cle: 'navigation.executions', droit: ['execution', 'read'] },
+  { to: '/planifications', cle: 'navigation.planifications', droit: ['schedule', 'read'] },
 ] as const;
 
 function LienBarre({ to, children }: { to: string; children: ReactNode }) {
@@ -144,7 +145,10 @@ export function Coquille() {
 
           {/* La section n'apparait que si l'on a au moins un droit dedans :
               une rubrique vide invite a cliquer sur ce qui refusera. */}
-          {(droit('entity', 'read') ?? droit('user', 'read') ?? droit('profile', 'read')) && (
+          {(droit('entity', 'read') ??
+            droit('user', 'read') ??
+            droit('profile', 'read') ??
+            droit('apikey', 'read')) && (
             <div className="space-y-0.5">
               <p className="text-faint px-3 pb-1 text-[11px] font-semibold tracking-wider uppercase">
                 {t('navigation.reglages')}
@@ -154,6 +158,7 @@ export function Coquille() {
               {droit('profile', 'read') && (
                 <LienBarre to="/profils">{t('profils.titre')}</LienBarre>
               )}
+              {droit('apikey', 'read') && <LienBarre to="/clefs">{t('clefs.titre')}</LienBarre>}
             </div>
           )}
         </nav>

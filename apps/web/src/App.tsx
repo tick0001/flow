@@ -7,7 +7,9 @@ import { Coquille } from '@/components/Coquille';
 import { Connexion } from '@/pages/Connexion';
 import { Bots } from '@/pages/Bots';
 import { Comptes } from '@/pages/Comptes';
+import { Clefs } from '@/pages/Clefs';
 import { Entites } from '@/pages/Entites';
+import { Planifications } from '@/pages/Planifications';
 import { Execution } from '@/pages/Execution';
 import { Executions } from '@/pages/Executions';
 import { Profils } from '@/pages/Profils';
@@ -64,6 +66,8 @@ function Racine() {
         <Route path="/bots" element={<Bots />} />
         <Route path="/executions" element={<Executions />} />
         <Route path="/executions/:id" element={<Execution />} />
+        <Route path="/planifications" element={<Planifications />} />
+        <Route path="/clefs" element={<Clefs />} />
         <Route path="/entites" element={<Entites />} />
         <Route path="/comptes" element={<Comptes />} />
         <Route path="/profils" element={<Profils />} />

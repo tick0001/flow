@@ -1,8 +1,13 @@
 import type {
+  ApiKey as ApiKeyServeur,
+  CronPreview as CronPreviewServeur,
   ExecutionArtifact as ExecutionArtifactServeur,
   ExecutionDetail as ExecutionDetailServeur,
   ExecutionLog as ExecutionLogServeur,
   ExecutionSummary as ExecutionSummaryServeur,
+  IssuedApiKey as IssuedApiKeyServeur,
+  Schedule as ScheduleServeur,
+  ScheduleDetail as ScheduleDetailServeur,
   UserSummary as UserSummaryServeur,
 } from '@flow/contracts';
 
@@ -59,6 +64,11 @@ export type ExecutionSummary = Transporte<ExecutionSummaryServeur>;
 export type ExecutionDetail = Transporte<ExecutionDetailServeur>;
 export type ExecutionLog = Transporte<ExecutionLogServeur>;
 export type UserSummary = Transporte<UserSummaryServeur>;
+export type ApiKey = Transporte<ApiKeyServeur>;
+export type IssuedApiKey = Transporte<IssuedApiKeyServeur>;
+export type CronPreview = Transporte<CronPreviewServeur>;
+export type Schedule = Transporte<ScheduleServeur>;
+export type ScheduleDetail = Transporte<ScheduleDetailServeur>;
 
 /** Une page de resultats, telle que les listes paginees la rendent. */
 export interface Page<T> {

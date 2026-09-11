@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { ApiKey, IssuedApiKey } from '@flow/contracts';
-import { and, apiKeys, desc, entities, eq, isNull, profiles, sql, users } from '@flow/db';
+import { and, apiKeys, desc, entities, eq, isNull, lt, or, profiles, sql, users } from '@flow/db';
 import { displayNameOf } from '../common/display-name.js';
 import { requireContext } from '../common/request-context.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -212,7 +212,7 @@ export class ApiKeyService {
 
     if (secret.length < 16) return null;
 
-    return this.db.asOwner(async (tx) => {
+    const resolue = await this.db.asOwner(async (tx) => {
       const [trouvee] = await tx
         .select({
           id: apiKeys.id,
@@ -242,14 +242,6 @@ export class ApiKeyService {
       if (trouvee.expiresAt && trouvee.expiresAt.getTime() < Date.now()) return null;
       if (!trouvee.isActive || trouvee.deletedAt !== null) return null;
 
-      // La derniere utilisation est ecrite sans attendre la reponse : c'est une
-      // information d'exploitation, et la faire payer a la latence de chaque
-      // appel d'API serait un mauvais echange.
-      void tx
-        .update(apiKeys)
-        .set({ lastUsedAt: sql`now()` })
-        .where(eq(apiKeys.id, trouvee.id));
-
       return {
         id: trouvee.id,
         userId: trouvee.userId,
@@ -258,6 +250,46 @@ export class ApiKeyService {
         includeSubEntities: trouvee.includeSubEntities,
       };
     });
+
+    if (resolue) this.marquerUtilisee(resolue.id);
+
+    return resolue;
+  }
+
+  /**
+   * Note qu'une clef vient de servir.
+   *
+   * **Hors de la transaction de lecture, et sans l'attendre.** Une premiere
+   * version l'ecrivait dedans, en `void` : la transaction se terminait avant que
+   * l'ecriture ne parte, et la colonne restait vide -- ce qui se voit mal, la
+   * clef fonctionnant parfaitement par ailleurs. Le defaut n'avait de consequence
+   * qu'au moment ou quelqu'un cherche a savoir si une clef sert encore avant de
+   * la couper, c'est-a-dire au pire moment.
+   *
+   * L'ecriture est **espacee** : une chaine d'integration qui appelle cent fois
+   * par minute produirait autrement cent ecritures sur la meme ligne, pour une
+   * information dont la minute suffit largement.
+   */
+  private marquerUtilisee(id: string): void {
+    void this.db
+      .asOwner((tx) =>
+        tx
+          .update(apiKeys)
+          .set({ lastUsedAt: sql`now()` })
+          .where(
+            and(
+              eq(apiKeys.id, id),
+              or(
+                isNull(apiKeys.lastUsedAt),
+                lt(apiKeys.lastUsedAt, sql`now() - interval '1 minute'`),
+              ),
+            ),
+          ),
+      )
+      .catch(() => {
+        // Une note d'exploitation perdue ne doit jamais faire echouer un appel
+        // par ailleurs legitime.
+      });
   }
 }
 

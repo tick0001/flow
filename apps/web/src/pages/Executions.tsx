@@ -51,16 +51,18 @@ export function Executions() {
 
   const statut = parametres.get('statut') ?? '';
   const botId = parametres.get('bot') ?? '';
+  const planification = parametres.get('planification') ?? '';
 
   const requete = new URLSearchParams();
 
   if (statut) requete.set('status', statut);
   if (botId) requete.set('botId', botId);
+  if (planification) requete.set('scheduleId', planification);
   if (seulementLesMiennes) requete.set('mine', 'true');
 
   const { data, isPending, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
-      queryKey: ['executions', statut, botId, seulementLesMiennes],
+      queryKey: ['executions', statut, botId, planification, seulementLesMiennes],
       queryFn: ({ pageParam }) => {
         const avec = new URLSearchParams(requete);
 
