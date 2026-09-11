@@ -66,6 +66,18 @@ export class RightsCatalogService {
 
     droit('execution', 'read', AVEC_AUTEUR),
     droit('execution', 'cancel', AVEC_AUTEUR),
+
+    droit('schedule', 'read', AVEC_AUTEUR),
+    droit('schedule', 'create', SANS_AUTEUR),
+    droit('schedule', 'update', AVEC_AUTEUR),
+    droit('schedule', 'delete', AVEC_AUTEUR),
+
+    // Une clef d'API agit comme son createur : la portee `own` y designe donc
+    // « les clefs que j'ai emises », ce qui est le reglage attendu pour quelqu'un
+    // qui gere ses propres integrations sans avoir a voir celles des autres.
+    droit('apikey', 'read', AVEC_AUTEUR),
+    droit('apikey', 'create', SANS_AUTEUR),
+    droit('apikey', 'delete', AVEC_AUTEUR),
   ];
 
   private readonly parPlugin = new Map<string, RightDefinition[]>();

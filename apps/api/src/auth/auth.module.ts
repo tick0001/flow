@@ -1,6 +1,7 @@
 import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthController } from './auth.controller.js';
+import { ApiKeyService } from './api-key.service.js';
 import { AuthService } from './auth.service.js';
 import { ContextMiddleware } from './context.middleware.js';
 import { LoginThrottleService } from './login-throttle.service.js';
@@ -16,6 +17,7 @@ import { RightsGuard } from './guards/rights.guard.js';
   controllers: [AuthController],
   providers: [
     AuthService,
+    ApiKeyService,
     PasswordService,
     SessionService,
     ScopeService,
@@ -28,7 +30,14 @@ import { RightsGuard } from './guards/rights.guard.js';
     // desynchronisee des la premiere.
     { provide: APP_GUARD, useClass: PasswordChangeGuard },
   ],
-  exports: [AuthService, PasswordService, ScopeService, RightsService, SessionService],
+  exports: [
+    AuthService,
+    ApiKeyService,
+    PasswordService,
+    ScopeService,
+    RightsService,
+    SessionService,
+  ],
 })
 export class AuthModule implements NestModule {
   /**

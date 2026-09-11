@@ -12,7 +12,8 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "db:init": "tsc -p tsconfig.build.json && node dist/cli/initialiser.js",
-    "db:seed": "tsc -p tsconfig.build.json && node dist/cli/seed.js"
+    "db:seed": "tsc -p tsconfig.build.json && node dist/cli/seed.js",
+    "openapi": "tsc -p tsconfig.build.json && node dist/cli/openapi.js"
   },
   "dependencies": {
     "@flow/contracts": "workspace:*",
@@ -27,6 +28,7 @@
     "ajv-formats": "^3.0.1",
     "bullmq": "^6.3.4",
     "cookie-parser": "^1.4.7",
+    "cron-parser": "^5.10.0",
     "express": "^5.2.1",
     "ioredis": "^6.0.0",
     "reflect-metadata": "^0.2.2",

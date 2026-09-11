@@ -11,6 +11,10 @@ coverage/
 !.env.example
 
 storage/
+# Description OpenAPI : elle se regenere par `pnpm openapi`. La suivre ferait
+# un fichier a reconstruire a chaque route ajoutee, et un conflit de fusion a
+# chaque fois que deux personnes en ajoutent une.
+openapi.json
 # Sorties des executions, en attendant le stockage de fichiers du jalon J5.
 donnees/
 # Bots ecrits par les tests du worker : ils vivent sous `apps/worker` pour que

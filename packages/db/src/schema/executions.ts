@@ -13,6 +13,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { entities } from './entities.js';
 import { profiles } from './profiles.js';
+import { schedules } from './schedules.js';
 import { users } from './users.js';
 import { executionStatusEnum, logLevelEnum } from './enums.js';
 
@@ -74,6 +75,15 @@ export const executions = pgTable(
       .references(() => users.id),
 
     /**
+     * La planification qui l'a produite, ou nul pour un lancement a la main.
+     *
+     * `ON DELETE SET NULL` : supprimer une planification ne doit pas emporter
+     * l'historique de ce qu'elle a lance. C'est meme souvent pour relire cet
+     * historique qu'on la supprime.
+     */
+    scheduleId: uuid('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
+
+    /**
      * Profil actif au lancement.
      *
      * Conserve parce que le worker en a besoin : il reconstitue le contexte de la
@@ -130,6 +140,7 @@ export const executions = pgTable(
     // etats non terminaux, qui sont une poignee de lignes dans une table qui
     // grossit sans fin. L'index porte donc sur l'etat seul.
     index('executions_status_idx').on(t.status),
+    index('executions_schedule_idx').on(t.scheduleId, t.createdAt.desc()),
   ],
 );
 
@@ -170,6 +181,7 @@ export const executionLogs = pgTable(
 
 export const executionsRelations = relations(executions, ({ one, many }) => ({
   entity: one(entities, { fields: [executions.entityId], references: [entities.id] }),
+  schedule: one(schedules, { fields: [executions.scheduleId], references: [schedules.id] }),
   requester: one(users, { fields: [executions.requestedBy], references: [users.id] }),
   profile: one(profiles, { fields: [executions.profileId], references: [profiles.id] }),
   logs: many(executionLogs),

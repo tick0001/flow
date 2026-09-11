@@ -76,6 +76,7 @@ const PROJECTION = {
   progressPercent: executions.progressPercent,
   cancelRequestedAt: executions.cancelRequestedAt,
   workerId: executions.workerId,
+  scheduleId: executions.scheduleId,
   parameters: executions.parameters,
   output: executions.output,
 };
@@ -236,6 +237,7 @@ export class ExecutionsService {
 
     if (portee) conditions.push(portee);
     if (requete.botId) conditions.push(eq(executions.botId, requete.botId));
+    if (requete.scheduleId) conditions.push(eq(executions.scheduleId, requete.scheduleId));
     if (requete.status) conditions.push(eq(executions.status, requete.status));
     if (requete.mine) conditions.push(eq(executions.requestedBy, context.userId));
     if (requete.depuis) conditions.push(gte(executions.createdAt, requete.depuis));

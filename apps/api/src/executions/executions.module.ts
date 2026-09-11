@@ -19,6 +19,6 @@ import { ExecutionStreamService } from './stream.service.js';
     ExecutionStreamService,
     ExecutionPurgeService,
   ],
-  exports: [ExecutionsService],
+  exports: [ExecutionsService, ExecutionRelayService],
 })
 export class ExecutionsModule {}

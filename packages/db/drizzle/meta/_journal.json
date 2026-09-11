@@ -43,6 +43,20 @@
       "when": 1789139525140,
       "tag": "0005_rls_des_pieces",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789141635845,
+      "tag": "0006_planifications_et_clefs",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789141646328,
+      "tag": "0007_rls_des_planifications",
+      "breakpoints": true
     }
   ]
 }

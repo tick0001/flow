@@ -7,6 +7,8 @@ import { EntitiesModule } from './entities/entities.module.js';
 import { ExecutionsModule } from './executions/executions.module.js';
 import { HealthModule } from './health/health.module.js';
 import { QueueModule } from './queue/queue.module.js';
+import { SchedulesModule } from './schedules/schedules.module.js';
+import { ApiKeysModule } from './apikeys/apikeys.module.js';
 import { StorageModule } from './storage/storage.module.js';
 
 @Module({
@@ -20,6 +22,8 @@ import { StorageModule } from './storage/storage.module.js';
     AdminModule,
     BotsModule,
     ExecutionsModule,
+    SchedulesModule,
+    ApiKeysModule,
   ],
 })
 export class AppModule {}

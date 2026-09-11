@@ -5,3 +5,5 @@ export * from './profiles.js';
 export * from './sessions.js';
 export * from './executions.js';
 export * from './artifacts.js';
+export * from './schedules.js';
+export * from './apikeys.js';

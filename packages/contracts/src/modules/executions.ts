@@ -247,6 +247,8 @@ export const executionsQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   botId: z.string().max(64).optional(),
+  /** Les executions produites par une planification donnee. */
+  scheduleId: z.uuid().optional(),
   status: executionStatusSchema.optional(),
   mine: z
     .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
