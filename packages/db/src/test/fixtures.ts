@@ -1,4 +1,16 @@
-import { and, createDatabase, entities, entitySettings, eq, inArray, sql } from '../index.js';
+import {
+  and,
+  createDatabase,
+  entities,
+  entitySettings,
+  eq,
+  executionLogs,
+  executions,
+  inArray,
+  profiles,
+  sql,
+  users,
+} from '../index.js';
 import type { Connection, EntityScope, RequestContext } from '../index.js';
 
 /**
@@ -16,6 +28,15 @@ export interface Fixture {
   app: Connection;
   entityIds: Record<string, number>;
   paths: Record<string, string>;
+  /**
+   * Un compte et un profil, pour satisfaire les cles etrangeres d'une execution.
+   *
+   * Ils n'ont aucun droit et ne servent a rien d'autre : ce que ces tests
+   * eprouvent est le cloisonnement par entite, pas les habilitations -- qui sont
+   * eprouvees cote API, ou elles sont decidees.
+   */
+  userId: number;
+  profileId: number;
   cleanup: () => Promise<void>;
 }
 
@@ -75,8 +96,30 @@ export async function createFixture(prefix: string): Promise<Fixture> {
   await addEntity('siteB', 'Site B', 'nord');
   await addEntity('siege', 'Siege', 'racine');
 
+  const [compte] = await owner.db
+    .insert(users)
+    .values({ username: `${prefix}-compte`, passwordHash: 'sans-objet', authSource: 'local' })
+    .returning({ id: users.id });
+
+  const [profil] = await owner.db
+    .insert(profiles)
+    .values({ name: `${prefix} Profil` })
+    .returning({ id: profiles.id });
+
+  if (!compte || !profil) throw new Error('Creation du compte ou du profil impossible.');
+
   const cleanup = async (): Promise<void> => {
     const ids = Object.values(entityIds);
+
+    if (ids.length > 0) {
+      // Les executions avant les entites qu'elles referencent. Leurs journaux
+      // partent en cascade -- une ligne de journal n'a aucun sens sans son
+      // execution, ce qui est exactement ce que la cascade exprime.
+      await owner.db.delete(executions).where(inArray(executions.entityId, ids));
+    }
+
+    await owner.db.delete(users).where(eq(users.id, compte.id));
+    await owner.db.delete(profiles).where(eq(profiles.id, profil.id));
 
     if (ids.length > 0) {
       // Les reglages d'abord : la contrainte est en cascade, mais l'ordre
@@ -110,7 +153,44 @@ export async function createFixture(prefix: string): Promise<Fixture> {
     await Promise.all([owner.close(), app.close()]);
   };
 
-  return { owner, app, entityIds, paths, cleanup };
+  return { owner, app, entityIds, paths, userId: compte.id, profileId: profil.id, cleanup };
+}
+
+/**
+ * Sème une execution sur une entite, avec le role proprietaire.
+ *
+ * Semee hors politiques pour que le test porte sur la **lecture** : une
+ * execution creee sous contexte prouverait seulement que le WITH CHECK accepte
+ * ce qui est dans le perimetre, et laisserait inexplore ce qu'une autre branche
+ * en voit.
+ */
+export async function seedExecution(
+  fixture: Fixture,
+  entityKey: string,
+  botId = 'essai.bot',
+): Promise<string> {
+  const [ligne] = await fixture.owner.db
+    .insert(executions)
+    .values({
+      botId,
+      botName: 'Essai',
+      botVersion: '1.0.0',
+      entityId: entityId(fixture, entityKey),
+      requestedBy: fixture.userId,
+      profileId: fixture.profileId,
+    })
+    .returning({ id: executions.id });
+
+  if (!ligne) throw new Error(`Creation d'une execution sur ${entityKey} impossible.`);
+
+  await fixture.owner.db.insert(executionLogs).values({
+    executionId: ligne.id,
+    seq: 0,
+    level: 'info',
+    message: `Journal de ${entityKey}`,
+  });
+
+  return ligne.id;
 }
 
 /** Contexte d'une habilitation **simple** : l'entite seule, sans sa descendance. */

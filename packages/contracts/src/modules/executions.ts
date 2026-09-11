@@ -136,3 +136,89 @@ export const executionEventSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 export type ExecutionEvent = z.infer<typeof executionEventSchema>;
+
+/**
+ * Une execution telle qu'une liste la montre.
+ *
+ * Le nom et la version du bot sont **recopies** sur l'execution, et non lus dans
+ * le registre a l'affichage : un bot se met a jour, se renomme, se retire. Aller
+ * les chercher ferait afficher « v2.0.0 » sur une trace produite par la
+ * precedente, ou vider la colonne le jour ou le dossier disparait -- alors que
+ * l'historique est precisement ce que l'outil existe pour garder.
+ */
+export const executionSummarySchema = z.object({
+  id: z.uuid(),
+  botId: z.string(),
+  botName: z.string(),
+  botVersion: z.string(),
+  status: executionStatusSchema,
+  headed: z.boolean(),
+  entity: z.object({ id: z.number().int().positive(), name: z.string() }),
+  requestedBy: z.object({ id: z.number().int().positive(), displayName: z.string() }),
+  createdAt: z.coerce.date(),
+  startedAt: z.coerce.date().nullable(),
+  finishedAt: z.coerce.date().nullable(),
+  /**
+   * Duree mesuree, posee a la fin. Nulle tant que l'execution court : la
+   * calculer au vol depuis `startedAt` donnerait un chiffre qui bouge a chaque
+   * rafraichissement, et l'horloge du client n'est pas celle du serveur.
+   */
+  durationMs: z.number().int().nonnegative().nullable(),
+  message: z.string().nullable(),
+  progress: executionProgressSchema.omit({ executionId: true }).nullable(),
+  /**
+   * Calcule par le serveur pour le compte qui interroge : le droit, sa portee et
+   * l'etat de l'execution y sont deja croises. L'interface n'a donc pas a
+   * refaire ce raisonnement, ni a se tromper differemment du serveur.
+   */
+  canCancel: z.boolean(),
+});
+export type ExecutionSummary = z.infer<typeof executionSummarySchema>;
+
+/** Le detail : ce qu'on a demande, ce qui en est sorti, et qui la detient. */
+export const executionDetailSchema = executionSummarySchema.extend({
+  parameters: z.record(z.string(), z.unknown()),
+  output: z.record(z.string(), z.unknown()).nullable(),
+  /** Identifiant du worker qui la detient ou l'a executee. */
+  worker: z.string().nullable(),
+  /**
+   * L'interruption a ete demandee mais l'execution n'est pas encore terminee.
+   *
+   * Sans cet etat, le bouton « interrompre » resterait actif apres un clic --
+   * une demande est asynchrone par nature, le worker la voit entre deux etapes.
+   */
+  cancelRequested: z.boolean(),
+});
+export type ExecutionDetail = z.infer<typeof executionDetailSchema>;
+
+/**
+ * Filtres d'une liste d'executions.
+ *
+ * `mine` existe en plus de la portee `own` du droit : quelqu'un qui voit toute
+ * son entite veut souvent ne voir que ses propres lancements, sans changer de
+ * profil pour autant.
+ */
+export const executionsQuerySchema = z.object({
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  botId: z.string().max(64).optional(),
+  status: executionStatusSchema.optional(),
+  mine: z
+    .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+    .transform((valeur) => valeur === true || valeur === 'true' || valeur === '1')
+    .optional(),
+});
+export type ExecutionsQuery = z.infer<typeof executionsQuerySchema>;
+
+/**
+ * Lecture du journal, a partir d'un rang.
+ *
+ * `afterSeq` et non une pagination par page : le client suit un journal qui
+ * s'allonge, et redemande « ce qui suit ce que j'ai deja ». Une pagination par
+ * decalage reafficherait les memes lignes des qu'une nouvelle arrive.
+ */
+export const executionLogsQuerySchema = z.object({
+  afterSeq: z.coerce.number().int().min(-1).default(-1),
+  limit: z.coerce.number().int().min(1).max(2000).default(500),
+});
+export type ExecutionLogsQuery = z.infer<typeof executionLogsQuerySchema>;

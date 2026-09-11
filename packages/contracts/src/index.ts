@@ -13,6 +13,7 @@
  */
 export * from './modules/common.js';
 export * from './modules/executions.js';
+export * from './modules/queue.js';
 export * from './modules/bots.js';
 export * from './modules/auth.js';
 export * from './modules/admin.js';
