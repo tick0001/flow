@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    // Le paquet ne parle qu'au systeme de fichiers et aux flux : il lui faut les
+    // declarations de Node, que la configuration de base ne charge pas -- elle
+    // sert aussi a l'interface, qui n'en a aucun usage.
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"]
+}

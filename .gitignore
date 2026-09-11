@@ -10,7 +10,16 @@ coverage/
 .env.*.local
 !.env.example
 
-storage/
+# **Ancre a la racine, et c'est tout l'interet du `/`.** Ecrite « storage/ »,
+# cette regle avale aussi `packages/storage/` et `apps/api/src/storage/` --
+# c'est-a-dire un paquet entier et un module de l'API, qui sont restes hors du
+# depot sans que rien ne le signale : tout se construisait sur les machines ou
+# les fichiers existaient. Seule une construction sur un clone vierge l'a
+# montre.
+#
+# Le dossier vise ici est le stockage de fichiers d'une installation de
+# developpement, a la racine.
+/storage/
 # Description OpenAPI : elle se regenere par `pnpm openapi`. La suivre ferait
 # un fichier a reconstruire a chaque route ajoutee, et un conflit de fusion a
 # chaque fois que deux personnes en ajoutent une.
