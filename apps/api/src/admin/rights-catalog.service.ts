@@ -78,6 +78,12 @@ export class RightsCatalogService {
     droit('apikey', 'read', AVEC_AUTEUR),
     droit('apikey', 'create', SANS_AUTEUR),
     droit('apikey', 'delete', AVEC_AUTEUR),
+
+    // Le pilotage a son propre droit : un tableau de bord montre des taux et des
+    // durees, pas le detail d'une execution. Les separer permet de donner les
+    // chiffres a qui pilote sans lui ouvrir les journaux, qui contiennent ce
+    // qu'un bot a lu sur les pages qu'il a visitees.
+    droit('stats', 'read', AVEC_AUTEUR),
   ];
 
   private readonly parPlugin = new Map<string, RightDefinition[]>();

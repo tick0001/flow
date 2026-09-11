@@ -9,6 +9,7 @@ import { HealthModule } from './health/health.module.js';
 import { QueueModule } from './queue/queue.module.js';
 import { SchedulesModule } from './schedules/schedules.module.js';
 import { ApiKeysModule } from './apikeys/apikeys.module.js';
+import { StatsModule } from './stats/stats.module.js';
 import { StorageModule } from './storage/storage.module.js';
 
 @Module({
@@ -24,6 +25,7 @@ import { StorageModule } from './storage/storage.module.js';
     ExecutionsModule,
     SchedulesModule,
     ApiKeysModule,
+    StatsModule,
   ],
 })
 export class AppModule {}
