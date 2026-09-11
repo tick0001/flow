@@ -15,7 +15,7 @@ whose stack, conventions and visual language Flow& shares.
 
 ## Where the project stands
 
-**Milestone J9 of eleven. The directory authenticates, and the journeys prove it.** Drop a bot folder, launch
+**Milestone J10 of eleven. The first release installs.** Drop a bot folder, launch
 it from the interface through a form derived from its schema, or **on a cron expression**, or **with
 an API key** from a CI pipeline. It runs in a separate worker driving Chromium; the log, the
 progress and the live browser view are pushed by the server. When it breaks, the screenshot at the
@@ -44,9 +44,14 @@ exist, and a test checks it against the router.
 
 Before it: the entity tree, PostgreSQL Row-Level Security, sessions, rights, account
 administration, both languages, the bot SDK, execution in a separate worker, real time, history,
-scheduling, API keys, insights and plugins.
+scheduling, API keys, insights, plugins and the directory.
 
-**What is left** is publishing: images, installation guides, backups and upgrades.
+Installation runs **in containers** or without, on Linux and on Windows Server. The
+[guide](docs/23-installation.md) was written while installing, and both backup and restore were
+proven there: database and volume wiped, then restored, and the screenshot of an earlier execution
+served again unchanged.
+
+    docker compose -f compose.production.yaml up -d
 
 What is already decided and argued lives in [`docs/`](docs/), in French:
 [functional scope](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
@@ -55,6 +60,7 @@ What is already decided and argued lives in [`docs/`](docs/), in French:
 [real time](docs/17-temps-reel.md), [history and storage](docs/18-historique-et-stockage.md),
 [scheduling and API](docs/19-planification-et-api.md), [insights](docs/20-pilotage.md),
 [plugins](docs/21-plugins.md), [directory and journeys](docs/22-annuaire-et-parcours.md),
+[installation](docs/23-installation.md),
 [interface](docs/12-interface.md), [roadmap](docs/06-feuille-de-route.md).
 
 Isolation between organisations is proven by integration tests against a real PostgreSQL database:

@@ -15,7 +15,7 @@ ITSM, dont Flow& reprend la pile technique, les conventions et l'écriture visue
 
 ## Où en est le projet
 
-**Jalon J9 sur onze. L'annuaire authentifie, et les parcours le prouvent.** On dépose un dossier de bot,
+**Jalon J10 sur onze. La première version s'installe.** On dépose un dossier de bot,
 on le lance depuis l'interface avec un formulaire déduit de son schéma, ou **par expression cron**,
 ou **par une clé d'API** depuis une chaîne d'intégration. Il tourne dans un worker séparé qui pilote
 Chromium ; le journal, la progression et la vue en direct du navigateur arrivent poussés par le
@@ -45,10 +45,15 @@ existent, et un test le vérifie contre le routeur.
 
 Avant lui : l'arbre des entités, le Row-Level Security de PostgreSQL, les sessions, les droits,
 l'administration des comptes, les deux langues, le SDK de bots, l'exécution dans un worker séparé,
-le temps réel, l'historique, la planification, les clés d'API, le pilotage et les plugins.
+le temps réel, l'historique, la planification, les clés d'API, le pilotage, les plugins et
+l'annuaire.
 
-**Il ne reste** que la publication : images, guides d'installation, sauvegardes et montées de
-version.
+L'installation se fait **en conteneurs** ou sans, sous Linux comme sous Windows Server. Le
+[guide](docs/23-installation.md) a été écrit en installant, et la sauvegarde comme la restauration y
+ont été éprouvées : base et volume effacés, puis restaurés, et la capture d'une exécution antérieure
+resservie à l'identique.
+
+    docker compose -f compose.production.yaml up -d
 
 Ce qui est déjà décidé et argumenté vit dans [`docs/`](docs/) :
 [périmètre](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
@@ -57,6 +62,7 @@ Ce qui est déjà décidé et argumenté vit dans [`docs/`](docs/) :
 [temps réel](docs/17-temps-reel.md), [historique et stockage](docs/18-historique-et-stockage.md),
 [planification et API](docs/19-planification-et-api.md), [pilotage](docs/20-pilotage.md),
 [plugins](docs/21-plugins.md), [annuaire et parcours](docs/22-annuaire-et-parcours.md),
+[installation](docs/23-installation.md),
 [interface](docs/12-interface.md), [feuille de route](docs/06-feuille-de-route.md).
 
 Le cloisonnement entre organisations est prouvé par des tests d'intégration contre une vraie base

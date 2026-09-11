@@ -138,10 +138,16 @@ prochaine connexion — une tâche de fond du plugin la fermera.
 
 Images GHCR, `compose.production.yaml`, guides d'installation en conteneurs et hors conteneurs
 (Linux, Windows Server), sauvegardes, montées de version, journal des modifications, image de
-prévisualisation sociale.
+prévisualisation sociale. Voir [l'installation](23-installation.md).
 
 Se termine quand une machine vierge suit le guide et obtient une installation qui fonctionne — et que
 ce qui a coincé en chemin est corrigé dans le guide, pas expliqué à l'oral.
+
+Quatre choses ont coincé, et les quatre sont corrigées dans le code plutôt que contournées dans le
+guide : `pnpm install && pnpm build` échouait sur un clone vierge ; un bot déposé dans un volume ne
+trouvait pas le SDK ; la première exécution butait sur les droits d'un volume créé par Docker ; et
+nginx, qui ne résout le nom d'un amont qu'une fois, relayait vers une adresse morte après chaque
+redémarrage de l'API — c'est-à-dire à chaque montée de version.
 
 ---
 

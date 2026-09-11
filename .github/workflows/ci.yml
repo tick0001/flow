@@ -109,8 +109,136 @@ jobs:
 
       - name: Tests
         run: pnpm test
-# Deux travaux manquent encore, et volontairement : « Conteneurs » (construction
-# des images et demarrage de la pile) arrive avec les Dockerfiles au jalon J10,
-# « Parcours » (scenarios dans un vrai navigateur) au jalon J9. Les declarer
-# maintenant rendrait l'integration continue rouge en permanence, ce qui est la
-# meilleure facon d'apprendre a ne plus la regarder.
+  parcours:
+    name: Parcours
+    runs-on: ubuntu-latest
+    # Apres la verification : lancer une campagne de navigateur sur un code qui
+    # ne compile pas ferait attendre huit minutes pour apprendre ce que `tsc`
+    # disait en trente secondes.
+    needs: verifier
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: flow
+          POSTGRES_PASSWORD: flow
+          POSTGRES_DB: flow
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U flow -d flow"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://flow:flow@localhost:5432/flow
+      DATABASE_APP_URL: postgres://flow_app:flow_app@localhost:5432/flow
+      REDIS_URL: redis://localhost:6379
+      SESSION_SECRET: secret-des-parcours
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      # Les parcours ouvrent une session : le cookie doit etre accepte sur du
+      # HTTP en clair, ce qui n'est vrai nulle part ailleurs.
+      COOKIE_SECURE: 'false'
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm navigateurs
+      - run: pnpm db:migrate
+      - run: pnpm build
+
+      # **Le worker n'ecoute aucun port.** Playwright sait demarrer l'API et
+      # l'interface -- il attend qu'une adresse reponde --, mais il n'a aucun
+      # moyen de dire quand un worker est pret. Il est donc lance ici, en fond,
+      # et le parcours du cycle d'execution echouerait sans lui.
+      - name: Worker
+        run: pnpm --filter @flow/worker start &
+
+      - name: Parcours
+        run: pnpm parcours
+
+      - name: Traces des parcours echoues
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parcours
+          path: apps/e2e/test-results
+          retention-days: 7
+
+  conteneurs:
+    name: Conteneurs
+    runs-on: ubuntu-latest
+    needs: verifier
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v3
+
+      # Les quatre cibles partagent leur etape de construction : les batir dans
+      # le meme travail la fait une seule fois.
+      - name: Images
+        run: |
+          for cible in api worker web migrations; do
+            docker build -f docker/Dockerfile --target "$cible" -t "flow-$cible:ci" .
+          done
+
+      # La construction ne prouve pas grand-chose : une image peut se batir et
+      # ne pas demarrer. Ce qui suit monte la pile pour de vrai, joue les
+      # migrations, amorce un compte et interroge la sonde de sante.
+      - name: Demarrage de la pile
+        run: |
+          cat > .env.ci <<'ENV'
+          POSTGRES_USER=flow
+          POSTGRES_PASSWORD=integration
+          POSTGRES_DB=flow
+          DATABASE_URL=postgres://flow:integration@postgres:5432/flow
+          DATABASE_APP_URL=postgres://flow_app:flow_app@postgres:5432/flow
+          SESSION_SECRET=secret-de-la-pile-d-integration
+          ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
+          API_URL=http://localhost:8080
+          WEB_URL=http://localhost:8080
+          COOKIE_SECURE=false
+          FLOW_WEB_BIND=127.0.0.1
+          FLOW_WEB_PORT=8080
+          FLOW_IMAGE_API=flow-api:ci
+          FLOW_IMAGE_WORKER=flow-worker:ci
+          FLOW_IMAGE_WEB=flow-web:ci
+          FLOW_IMAGE_MIGRATIONS=flow-migrations:ci
+          ENV
+
+          compose="docker compose -f docker/compose.production.yaml --env-file .env.ci -p flow-ci"
+
+          $compose up -d postgres
+          timeout 120 sh -c "until $compose exec -T postgres pg_isready -U flow -d flow; do sleep 2; done"
+          $compose run --rm migrations
+          $compose run --rm -e FLOW_ADMIN_PASSWORD=mot-de-passe-integration \
+            api node apps/api/dist/cli/initialiser.js
+          $compose up -d
+
+      - name: Sonde de sante
+        run: |
+          timeout 180 sh -c 'until curl -sf http://127.0.0.1:8080/api/health | grep -q "\"database\":true"; do sleep 3; done'
+          curl -s http://127.0.0.1:8080/api/health
+
+      - name: Journaux si la pile n'est pas venue
+        if: failure()
+        run: docker compose -f docker/compose.production.yaml --env-file .env.ci -p flow-ci logs
+
+      - name: Extinction
+        if: always()
+        run: docker compose -f docker/compose.production.yaml --env-file .env.ci -p flow-ci down -v
