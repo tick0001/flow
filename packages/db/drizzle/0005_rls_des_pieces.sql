@@ -38,16 +38,15 @@ CREATE POLICY execution_artifacts_scope ON execution_artifacts FOR ALL TO flow_a
 --> statement-breakpoint
 
 -- -----------------------------------------------------------------------------
--- 2. Recherche dans les journaux, insensible a la casse
+-- 2. Recherche dans les journaux : rien a ajouter
 --
--- L'index trigramme pose en 0003 sert `LIKE '%motif%'`. Il ne sert **pas**
--- `ILIKE`, qui compare autrement : PostgreSQL ne s'en sert que si l'expression
--- indexee correspond, et `lower(message)` n'est pas `message`.
+-- Un second index sur `lower(message)` a failli etre pose ici, au motif que
+-- l'index trigramme de 0003 n'aurait servi que `LIKE`. C'est faux : la classe
+-- d'operateurs `gin_trgm_ops` sert aussi `ILIKE`, `~` et `~*`, et le plan le
+-- montre -- `Bitmap Index Scan on execution_logs_message_trgm` avec
+-- `Index Cond: (message ~~* '%motif%')`.
 --
--- D'ou un second index sur la forme en minuscules, et une recherche ecrite
--- `lower(message) LIKE lower(motif)`. Sans lui, chercher un fragment dans les
--- journaux d'une installation qui tourne depuis un an balaierait la plus grosse
--- table du schema -- et ce serait le jour d'un incident.
+-- La recherche s'ecrit donc `ILIKE`, et l'index existant suffit. Le second
+-- aurait double le cout d'ecriture de la table qui grossit le plus vite du
+-- schema, pour rien.
 -- -----------------------------------------------------------------------------
-CREATE INDEX execution_logs_message_ci_trgm
-  ON execution_logs USING gin (lower(message) gin_trgm_ops);

@@ -2,6 +2,7 @@ import type { ExecutionEvent, LogLevel } from '@flow/contracts';
 import type { RequestContext } from '@flow/db';
 import type { Depot, LigneDeJournal } from './depot.js';
 import { journalDe } from './log.js';
+import { assainirMessage } from './message.js';
 
 const log = journalDe('Journal');
 
@@ -73,10 +74,14 @@ export class Journal {
    * silencieusement, parce que personne ne l'attendrait.
    */
   ecrire(level: LogLevel, message: string): void {
+    // Assaini avant d'etre borne : un bot peut journaliser la sortie coloree
+    // d'un outil, et les codes d'echappement ne sont invisibles que dans un
+    // terminal -- pas en base, pas dans l'interface.
+    const propre = assainirMessage(message);
     const tronque =
-      message.length > LONGUEUR_MAX
-        ? `${message.slice(0, LONGUEUR_MAX)}… (ligne tronquee, ${String(message.length)} caracteres)`
-        : message;
+      propre.length > LONGUEUR_MAX
+        ? `${propre.slice(0, LONGUEUR_MAX)}… (ligne tronquee, ${String(propre.length)} caracteres)`
+        : propre;
 
     this.tampon.push({ seq: this.suivant, at: new Date(), level, message: tronque });
     this.suivant += 1;

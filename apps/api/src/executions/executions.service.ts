@@ -27,6 +27,7 @@ import {
   executions,
   gt,
   gte,
+  ilike,
   lte,
   sql,
   users,
@@ -365,12 +366,11 @@ export class ExecutionsService {
     }
 
     if (requete.search) {
-      // `lower(...) LIKE lower(...)` et non `ILIKE` : l'index trigramme pose sur
-      // la forme en minuscules ne sert que cette ecriture-la. Avec `ILIKE`,
-      // PostgreSQL balaierait la plus grosse table du schema.
-      conditions.push(
-        sql`lower(${executionLogs.message}) LIKE lower(${`%${echapperLike(requete.search)}%`})`,
-      );
+      // `ILIKE` et non `lower(...) LIKE lower(...)` : la classe d'operateurs
+      // trigramme sert directement l'insensibilite a la casse, et l'index pose
+      // sur `message` suffit -- verifie au plan. L'ecriture en `lower()` aurait
+      // demande un second index sur la table qui grossit le plus vite du schema.
+      conditions.push(ilike(executionLogs.message, `%${echapperLike(requete.search)}%`));
     }
 
     const lignes = await this.db.asUser((tx) =>

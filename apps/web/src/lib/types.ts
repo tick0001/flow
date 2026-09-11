@@ -1,4 +1,5 @@
 import type {
+  ExecutionArtifact as ExecutionArtifactServeur,
   ExecutionDetail as ExecutionDetailServeur,
   ExecutionLog as ExecutionLogServeur,
   ExecutionSummary as ExecutionSummaryServeur,
@@ -14,6 +15,7 @@ import type {
  * nulle part ailleurs.
  */
 export type {
+  ArtifactKind,
   Authorization,
   AvailableContext,
   BotManifest,
@@ -52,6 +54,7 @@ type Transporte<T> = T extends Date
       ? { [K in keyof T]: Transporte<T[K]> }
       : T;
 
+export type ExecutionArtifact = Transporte<ExecutionArtifactServeur>;
 export type ExecutionSummary = Transporte<ExecutionSummaryServeur>;
 export type ExecutionDetail = Transporte<ExecutionDetailServeur>;
 export type ExecutionLog = Transporte<ExecutionLogServeur>;

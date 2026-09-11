@@ -2,14 +2,7 @@ import { Link, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import {
-  dureeLisible,
-  estTerminal,
-  heureLisible,
-  instantLisible,
-  TON_DU_NIVEAU,
-  TON_DU_STATUT,
-} from '@/lib/executions';
+import { dureeLisible, estTerminal, instantLisible, TON_DU_STATUT } from '@/lib/executions';
 import { useFluxExecution, type EtatDuFlux } from '@/lib/flux';
 import type { ExecutionDetail } from '@/lib/types';
 import {
@@ -21,8 +14,9 @@ import {
   Notice,
   PageHeader,
   Pastille,
-  SectionTitle,
 } from '@/components/ui/primitives';
+import { JournalDExecution } from '@/components/JournalDExecution';
+import { PiecesDExecution } from '@/components/PiecesDExecution';
 
 /**
  * Le detail d'une execution, en direct.
@@ -193,34 +187,9 @@ export function Execution() {
         </Card>
       )}
 
-      <div className="space-y-2">
-        <SectionTitle
-          action={!termine && <span className="text-faint text-xs">{t('executions.suivi')}</span>}
-        >
-          {t('executions.journal')}
-        </SectionTitle>
+      <PiecesDExecution executionId={execution.id} pieces={execution.artifacts} />
 
-        {lignes.length === 0 ? (
-          <p className="text-faint text-sm">{t('executions.journalVide')}</p>
-        ) : (
-          <div className="border-line bg-surface divide-line max-h-[28rem] divide-y overflow-y-auto border">
-            {lignes.map((ligne) => (
-              <div
-                key={ligne.seq}
-                className="flex items-baseline gap-3 px-3 py-1.5 font-mono text-xs"
-              >
-                <span className="text-faint tabular-nums">
-                  {heureLisible(ligne.at, i18n.language)}
-                </span>
-                <Badge ton={TON_DU_NIVEAU[ligne.level]}>{ligne.level}</Badge>
-                <span className="text-ink min-w-0 break-words whitespace-pre-wrap">
-                  {ligne.message}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <JournalDExecution lignes={lignes} suivi={!termine} />
     </div>
   );
 }

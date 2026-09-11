@@ -12,6 +12,7 @@ import type { BrowserContext } from 'playwright';
 import type { FileStore } from '@flow/storage';
 import type { Navigateurs } from './navigateur.js';
 import { Progression } from './progression.js';
+import { bornerMessage } from './message.js';
 import { Recolte } from './pieces.js';
 import { Screencast } from './screencast.js';
 import { chargerBot } from './registre.js';
@@ -409,7 +410,7 @@ export class Executeur {
 
     return {
       status: 'succeeded',
-      message: resultat?.message ? tronquer(resultat.message) : null,
+      message: resultat?.message ? bornerMessage(resultat.message, MESSAGE_MAX) : null,
       output: resultat?.output ?? null,
       durationMs: Date.now() - suivi.demarre,
     };
@@ -431,7 +432,7 @@ export class Executeur {
 
     return {
       status: 'failed',
-      message: tronquer(message),
+      message: bornerMessage(message, MESSAGE_MAX),
       output: null,
       durationMs: Date.now() - demarre,
     };
@@ -520,8 +521,4 @@ export class Executeur {
       await rm(chemin, { force: true });
     }
   }
-}
-
-function tronquer(message: string): string {
-  return message.length > MESSAGE_MAX ? `${message.slice(0, MESSAGE_MAX - 1)}…` : message;
 }
