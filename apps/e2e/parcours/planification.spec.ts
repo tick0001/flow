@@ -1,4 +1,4 @@
-import { BOT, expect, seConnecter, test } from '../fixtures/parcours.js';
+import { ADRESSE_VISITEE, BOT, expect, seConnecter, test } from '../fixtures/parcours.js';
 
 /**
  * La planification, vue du navigateur.
@@ -28,7 +28,7 @@ test.describe('Parcours : la planification', () => {
 
     // Les champs du bot n'apparaissent qu'une fois le bot choisi : ils sont
     // deduits de son schema, exactement comme au lancement manuel.
-    await page.getByLabel('url').fill('https://example.com');
+    await page.getByLabel('url').fill(ADRESSE_VISITEE);
     await page.getByLabel('selecteur').fill('a');
 
     // L'apercu vient du serveur : c'est lui qui dit que la cadence a ete

@@ -58,6 +58,19 @@ export async function seConnecter(page: Page, identifiant: string): Promise<void
 export const BOT = 'Bonjour';
 
 /**
+ * L'adresse que le bot visite pendant les parcours : **l'application elle-meme**.
+ *
+ * Une premiere version pointait sur `example.com`. La campagne dependait alors
+ * du reseau public : un DNS lent ou une coupure faisait echouer le parcours du
+ * cycle d'execution, et l'echec designait le bot plutot que la cause. Une suite
+ * de parcours qui tombe pour une raison exterieure finit par ne plus etre lue.
+ *
+ * L'interface est deja lancee -- la campagne l'exige -- et elle porte des liens,
+ * ce que le selecteur du bot cherche.
+ */
+export const ADRESSE_VISITEE = process.env['E2E_BASE_URL'] ?? 'http://localhost:5273';
+
+/**
  * Lance le bot d'exemple depuis le catalogue, et attend sa page d'execution.
  *
  * Passe par l'ecran plutot que par l'API : le formulaire est **deduit du schema
@@ -65,7 +78,7 @@ export const BOT = 'Bonjour';
  * qui est precisement l'endroit ou une divergence entre le manifeste et le
  * formulaire se verrait.
  */
-export async function lancerLeBot(page: Page, url = 'https://example.com'): Promise<void> {
+export async function lancerLeBot(page: Page, url = ADRESSE_VISITEE): Promise<void> {
   await page.goto('/bots');
 
   await expect(page.getByText(BOT).first()).toBeVisible();
