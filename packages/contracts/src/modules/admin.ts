@@ -133,6 +133,20 @@ export const rightDefinitionSchema = z.object({
   action: z.string(),
   /** Clef de traduction du libelle, resolue a l'affichage. */
   labelKey: z.string(),
+
+  /**
+   * Libelle deja traduit, quand aucune clef ne peut le porter.
+   *
+   * Les droits du coeur ont une clef : leurs libelles vivent dans les
+   * dictionnaires, compiles dans le paquet de l'interface. Un plugin ne peut
+   * rien y ajouter -- il arrive apres la construction. Il porte donc ses
+   * libelles avec lui, et l'interface les prefere a la clef quand ils sont la.
+   */
+  label: z.record(localeSchema, z.string()).optional(),
+
+  /** Libelle du groupe -- le nom du plugin -- pour les memes raisons. */
+  groupLabel: z.record(localeSchema, z.string()).optional(),
+
   scopes: z.array(rightScopeSchema).min(1),
 });
 export type RightDefinition = z.infer<typeof rightDefinitionSchema>;

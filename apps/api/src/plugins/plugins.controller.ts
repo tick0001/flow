@@ -1,0 +1,201 @@
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { resolve, sep } from 'node:path';
+import {
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { pluginSlotSchema, type PluginAsset, type PluginSummary } from '@flow/contracts';
+import { AuthenticatedGuard } from '../auth/guards/authenticated.guard.js';
+import { RequireRight, RightsGuard } from '../auth/guards/rights.guard.js';
+import { PluginRegistryService } from './registre.service.js';
+import { PluginInstallerService } from './installateur.service.js';
+import { PluginHostService } from './hote.service.js';
+
+@Controller('plugins')
+@UseGuards(AuthenticatedGuard, RightsGuard)
+export class PluginsController {
+  constructor(
+    private readonly registre: PluginRegistryService,
+    private readonly installateur: PluginInstallerService,
+    private readonly hote: PluginHostService,
+  ) {}
+
+  /**
+   * Tout ce qui est pose sur le disque, et tout ce qui est installe.
+   *
+   * **L'union des deux, et non l'un ou l'autre.** Un dossier depose et jamais
+   * installe doit se voir pour qu'on puisse l'installer ; une ligne dont le
+   * dossier a disparu doit se voir pour qu'on puisse la desinstaller. Ne montrer
+   * que l'intersection laisserait les deux cas invisibles -- et le second laisse
+   * des tables et des droits derriere lui.
+   */
+  @Get()
+  @RequireRight('plugin', 'read')
+  async liste(): Promise<PluginSummary[]> {
+    const installes = new Map(
+      (await this.installateur.installes()).map((ligne) => [ligne.id, ligne]),
+    );
+    const resumes: PluginSummary[] = [];
+
+    for (const decouvert of this.registre.all()) {
+      const installe = installes.get(decouvert.id);
+      const manifeste = decouvert.manifest;
+
+      installes.delete(decouvert.id);
+
+      resumes.push({
+        id: decouvert.id,
+        name: manifeste?.name ?? installe?.name ?? decouvert.id,
+        description: manifeste?.description ?? '',
+        version: manifeste?.version ?? null,
+        installedVersion: installe?.version ?? null,
+        author: manifeste?.author ?? '',
+        state:
+          manifeste === null
+            ? 'refuse'
+            : installe === undefined
+              ? 'disponible'
+              : installe.isEnabled
+                ? 'actif'
+                : 'inactif',
+        reason: decouvert.reason,
+        schema: manifeste?.schema ?? installe?.schemaName !== null,
+        rights: manifeste?.rights ?? [],
+        hooks: manifeste?.hooks ?? [],
+        events: manifeste?.events ?? [],
+        surfaces: manifeste?.surfaces ?? [],
+        tasks: manifeste?.tasks ?? [],
+      });
+    }
+
+    // Ce qui reste est installe sans etre sur le disque : des orphelins.
+    for (const ligne of installes.values()) {
+      resumes.push({
+        id: ligne.id,
+        name: ligne.name,
+        description: '',
+        version: null,
+        installedVersion: ligne.version,
+        author: '',
+        state: 'orphelin',
+        reason:
+          'Installe, mais absent du dossier des plugins. Son schema et ses droits sont toujours en base.',
+        schema: ligne.schemaName !== null,
+        rights: [],
+        hooks: [],
+        events: [],
+        surfaces: [],
+        tasks: [],
+      });
+    }
+
+    return resumes.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Les emplacements a remplir, pour l'interface.
+   *
+   * Sous le simple fait d'etre connecte, et non sous `plugin:read` : lire la
+   * liste des plugins est une affaire d'administration, tandis que voir un
+   * encart pose par un plugin est l'usage courant de l'application.
+   */
+  @Get('emplacements')
+  emplacements(): PluginAsset[] {
+    return this.hote.all().flatMap((charge) =>
+      charge.manifest.surfaces.map((surface) => ({
+        pluginId: charge.manifest.id,
+        pluginName: charge.manifest.name,
+        slot: surface.slot,
+        url: `/api/plugins/${charge.manifest.id}/interface/${surface.slot}`,
+      })),
+    );
+  }
+
+  /**
+   * Sert le module d'interface d'un plugin.
+   *
+   * Le client ne choisit pas de fichier : il nomme un **emplacement**, et le
+   * manifeste dit quel fichier le remplit. Aucun chemin ne vient donc de
+   * l'exterieur, et la question de la traversee de repertoire ne se pose pas --
+   * la reponse est verifiee une seconde fois malgre tout, parce que le manifeste
+   * est ecrit par quelqu'un d'autre.
+   */
+  @Get(':id/interface/:slot')
+  async interface(
+    @Param('id') id: string,
+    @Param('slot') slot: string,
+    @Res() reponse: Response,
+  ): Promise<void> {
+    const lecture = pluginSlotSchema.safeParse(slot);
+
+    if (!lecture.success) throw new NotFoundException('Emplacement inconnu.');
+
+    const charge = this.hote.get(id);
+
+    if (!charge) throw new NotFoundException('Plugin inactif ou inconnu.');
+
+    const surface = charge.manifest.surfaces.find((candidate) => candidate.slot === lecture.data);
+
+    if (!surface) throw new NotFoundException('Ce plugin ne remplit pas cet emplacement.');
+
+    const racine = resolve(charge.directory);
+    const fichier = resolve(racine, surface.entry);
+
+    if (fichier !== racine && !fichier.startsWith(racine + sep)) {
+      throw new NotFoundException('Fichier hors du dossier du plugin.');
+    }
+
+    const infos = await stat(fichier).catch(() => null);
+
+    if (!infos?.isFile()) throw new NotFoundException('Fichier absent.');
+
+    reponse.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+    // Pas de cache : un plugin mis a jour doit se voir au rechargement de la
+    // page, et ces fichiers sont minuscules.
+    reponse.setHeader('Cache-Control', 'no-store');
+
+    createReadStream(fichier).pipe(reponse);
+  }
+
+  /** Relit le dossier : un plugin depose apparait sans redemarrage. */
+  @Post('relire')
+  @RequireRight('plugin', 'manage')
+  async relire(): Promise<PluginSummary[]> {
+    await this.registre.relire();
+
+    return this.liste();
+  }
+
+  @Post(':id/installer')
+  @RequireRight('plugin', 'manage')
+  async installer(@Param('id') id: string): Promise<void> {
+    await this.installateur.installer(id);
+  }
+
+  @Post(':id/activer')
+  @RequireRight('plugin', 'manage')
+  async activer(@Param('id') id: string): Promise<void> {
+    await this.installateur.basculer(id, true);
+  }
+
+  @Post(':id/desactiver')
+  @RequireRight('plugin', 'manage')
+  async desactiver(@Param('id') id: string): Promise<void> {
+    await this.installateur.basculer(id, false);
+  }
+
+  /** Desinstalle : le schema, les droits et la ligne s'en vont. */
+  @Delete(':id')
+  @RequireRight('plugin', 'manage')
+  async desinstaller(@Param('id') id: string): Promise<void> {
+    await this.installateur.desinstaller(id);
+  }
+}

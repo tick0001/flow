@@ -10,6 +10,7 @@ import { QueueModule } from './queue/queue.module.js';
 import { SchedulesModule } from './schedules/schedules.module.js';
 import { ApiKeysModule } from './apikeys/apikeys.module.js';
 import { StatsModule } from './stats/stats.module.js';
+import { PluginsModule } from './plugins/plugins.module.js';
 import { StorageModule } from './storage/storage.module.js';
 
 @Module({
@@ -26,6 +27,7 @@ import { StorageModule } from './storage/storage.module.js';
     SchedulesModule,
     ApiKeysModule,
     StatsModule,
+    PluginsModule,
   ],
 })
 export class AppModule {}

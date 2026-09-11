@@ -117,3 +117,37 @@ export const REGARD_RAPPEL_MS = 10_000;
 
 /** Silence au-dela duquel le worker considere que plus personne ne regarde. */
 export const REGARD_PERIME_MS = REGARD_RAPPEL_MS * 3;
+
+/**
+ * Canal de la vie des executions : elles partent, elles se terminent.
+ *
+ * **Global, et volontairement pauvre.** Il ne porte ni journal, ni progression,
+ * ni image -- seulement le fait qu'une execution a commence ou fini, et de quoi
+ * la retrouver. Toutes les instances d'API l'ecoutent en permanence, la ou le
+ * canal d'une execution ne s'ouvre que si quelqu'un la regarde.
+ *
+ * Il existe pour les plugins. Sans lui, l'API ne sait jamais qu'une execution
+ * s'est terminee : elle l'apprend en relisant la base quand on la lui demande,
+ * ce qui suffit a afficher une page et pas a declencher quoi que ce soit. Un
+ * evenement `execution.terminee` aurait alors ete une promesse vide.
+ *
+ * L'invariant du jalon J4 vaut ici aussi : la ligne est ecrite avant d'etre
+ * publiee. Un plugin qui relit l'execution a la reception la trouve dans l'etat
+ * annonce.
+ */
+export const CANAL_VIE = 'flow.vie';
+
+export const executionLifeSchema = z.object({
+  phase: z.enum(['lancee', 'terminee']),
+  executionId: z.uuid(),
+  botId: z.string(),
+  /** De quoi reconstituer le contexte de travail sans relire la base. */
+  userId: z.number().int().positive(),
+  profileId: z.number().int().positive(),
+  entityPath: z.string().min(1),
+  /** Renseignes a la fin seulement. */
+  status: z.string().optional(),
+  durationMs: z.number().int().nonnegative().nullable().optional(),
+  message: z.string().nullable().optional(),
+});
+export type ExecutionLife = z.infer<typeof executionLifeSchema>;

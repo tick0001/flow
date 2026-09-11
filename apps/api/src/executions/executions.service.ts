@@ -41,6 +41,7 @@ import { BotRegistryService } from '../bots/bot-registry.service.js';
 import { ParameterValidatorService } from '../bots/parameter-validator.service.js';
 import { QueueService } from '../queue/queue.service.js';
 import { ExecutionRelayService } from './relais.service.js';
+import { PluginHooksService } from '../plugins/hooks.service.js';
 
 /**
  * Les colonnes que la liste et le detail lisent, declarees une fois.
@@ -168,6 +169,7 @@ export class ExecutionsService {
     private readonly rights: RightsService,
     private readonly file: QueueService,
     private readonly relais: ExecutionRelayService,
+    private readonly hooks: PluginHooksService,
   ) {}
 
   /**
@@ -193,6 +195,18 @@ export class ExecutionsService {
     }
 
     const parametres = this.parametres.valider(bot.manifest, demande.parameters);
+
+    // Les plugins sont consultes **avant l'ecriture**, et c'est la seule place
+    // qui tienne : un refus ne doit rien laisser derriere lui. Consulter apres
+    // aurait produit une execution mort-nee en base, visible dans l'historique,
+    // qu'il aurait fallu ensuite expliquer.
+    await this.hooks.avantLancement({
+      botId: bot.manifest.id,
+      botName: bot.manifest.name,
+      parameters: parametres,
+      entityPath: context.entityPath,
+      userId: context.userId,
+    });
 
     const [creee] = await this.db.asUser((tx) =>
       tx

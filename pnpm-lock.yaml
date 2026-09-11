@@ -50,6 +50,9 @@ importers:
       '@flow/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@flow/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
       '@flow/storage':
         specifier: workspace:*
         version: link:../../packages/storage

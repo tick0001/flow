@@ -80,6 +80,29 @@ const envSchema = z.object({
   BOTS_PATH: z.string().min(1).default('./bots'),
 
   /**
+   * Dossier scanne pour les plugins deposes.
+   *
+   * L'API y lit d'abord un manifeste JSON -- et **importe ensuite le module**,
+   * ce qu'elle ne fait jamais pour un bot. La difference n'est pas un oubli :
+   * un bot fait un travail que le worker sait executer a distance, alors qu'un
+   * plugin etend l'application elle-meme. Ses hooks s'executent dans le chemin
+   * des requetes, avec les privileges de l'API. Installer un plugin engage donc
+   * autant que deployer une version.
+   */
+  PLUGINS_PATH: z.string().min(1).default('./plugins'),
+
+  /**
+   * Delai laisse a un hook de plugin, en millisecondes.
+   *
+   * Un hook s'execute dans le chemin d'une operation : sans borne, un plugin qui
+   * attend une reponse d'un service injoignable bloquerait chaque lancement de
+   * bot de l'installation. Passe ce delai, l'operation est **refusee**, jamais
+   * laissee passer -- un hook qui n'a pas repondu n'a pas donne son accord, et
+   * poursuivre reviendrait a decider a sa place.
+   */
+  PLUGIN_HOOK_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(5_000),
+
+  /**
    * Racine du stockage de fichiers.
    *
    * **Le meme dossier que le worker.** Il ecrit les captures et les traces,

@@ -1,11 +1,13 @@
 import { Redis } from 'ioredis';
 import {
   CANAL_REGARD,
+  CANAL_VIE,
   REGARD_PERIME_MS,
   REGARD_RAPPEL_MS,
   canalExecution,
   watchOrderSchema,
   type ExecutionEvent,
+  type ExecutionLife,
 } from '@flow/contracts';
 import { loadEnv } from './config/env.js';
 import { journalDe } from './log.js';
@@ -98,6 +100,24 @@ export class Diffusion {
       .catch((erreur: unknown) => {
         log.debug(`Diffusion perdue pour ${executionId} : ${String(erreur)}`);
       });
+  }
+
+  /**
+   * Annonce qu'une execution part ou se termine, sur le canal global.
+   *
+   * Separe de `publier` parce que les destinataires ne sont pas les memes : le
+   * canal d'une execution ne s'ouvre que si quelqu'un la regarde, alors que
+   * celui-ci est ecoute en permanence par toutes les instances d'API -- c'est la
+   * seule facon pour elles d'apprendre qu'une execution s'est terminee sans que
+   * personne n'ait eu la page ouverte.
+   *
+   * Publie **apres** l'ecriture en base, comme tout le reste : un plugin qui
+   * relit l'execution a la reception la trouve dans l'etat annonce.
+   */
+  publierVie(vie: ExecutionLife): void {
+    this.publieur.publish(CANAL_VIE, JSON.stringify(vie)).catch((erreur: unknown) => {
+      log.debug(`Vie perdue pour ${vie.executionId} : ${String(erreur)}`);
+    });
   }
 
   /** Quelqu'un regarde-t-il cette execution en ce moment ? */

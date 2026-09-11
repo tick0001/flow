@@ -84,6 +84,16 @@ export class RightsCatalogService {
     // chiffres a qui pilote sans lui ouvrir les journaux, qui contiennent ce
     // qu'un bot a lu sur les pages qu'il a visitees.
     droit('stats', 'read', AVEC_AUTEUR),
+
+    // Les plugins ne se cloisonnent pas : un plugin s'installe pour toute
+    // l'installation, et ses tables, ses droits et ses points d'accroche valent
+    // partout. Une portee par entite laisserait croire l'inverse.
+    //
+    // `manage` est le droit le plus puissant du catalogue, et de loin : un
+    // plugin s'execute dans le processus de l'API, avec ses privileges.
+    // L'accorder revient a accorder le droit de deployer du code.
+    droit('plugin', 'read', ['all']),
+    droit('plugin', 'manage', ['all']),
   ];
 
   private readonly parPlugin = new Map<string, RightDefinition[]>();

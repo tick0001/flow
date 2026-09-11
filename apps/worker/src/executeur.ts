@@ -130,6 +130,14 @@ export class Executeur {
     this.enCours.set(reclamee.id, suivi);
     log.log(`${reclamee.id} : ${reclamee.botId} demarre.`);
     publier({ kind: 'status', payload: { executionId: reclamee.id, status: 'running' } });
+    this.diffusion.publierVie({
+      phase: 'lancee',
+      executionId: reclamee.id,
+      botId: reclamee.botId,
+      userId: reclamee.context.userId,
+      profileId: reclamee.context.profileId,
+      entityPath: reclamee.context.entityPath,
+    });
 
     let denouement: Denouement;
 
@@ -181,6 +189,17 @@ export class Executeur {
     // Apres l'ecriture, jamais avant : un client qui recoit l'etat terminal
     // redemande le detail dans la foulee, et le trouverait encore « en cours ».
     publier({ kind: 'status', payload: { executionId: reclamee.id, status: denouement.status } });
+    this.diffusion.publierVie({
+      phase: 'terminee',
+      executionId: reclamee.id,
+      botId: reclamee.botId,
+      userId: reclamee.context.userId,
+      profileId: reclamee.context.profileId,
+      entityPath: reclamee.context.entityPath,
+      status: denouement.status,
+      durationMs: denouement.durationMs,
+      message: denouement.message ?? null,
+    });
     this.diffusion.oublierRegard(reclamee.id);
 
     log.log(
