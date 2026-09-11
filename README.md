@@ -15,21 +15,22 @@ whose stack, conventions and visual language Flow& shares.
 
 ## Where the project stands
 
-**Milestone J4 of eleven. Bots run, and you can watch them work.** Drop a bot folder, launch it from
-the interface through a form derived from its schema, and it runs in a separate worker driving
-Chromium. The log, the progress and the **live browser view** are pushed by the server; two screens
-open on the same execution see the same thing, and a network cut recovers without losing a line.
+**Milestone J5 of eleven. A failure is diagnosed on screen.** Drop a bot folder, launch it from the
+interface through a form derived from its schema, and it runs in a separate worker driving Chromium.
+The log, the progress and the **live browser view** are pushed by the server. When it breaks, the
+**screenshot at the moment of failure** and the **Playwright trace** are on the page, along with a
+filterable log — without opening a terminal.
 
 Before it: the entity tree, PostgreSQL Row-Level Security, sessions, rights, account
-administration, both languages, the bot SDK, and execution in a separate worker.
+administration, both languages, the bot SDK, execution in a separate worker, and real time.
 
-**There is not yet** deep history browsing, scheduling, or API keys.
+**There is not yet** scheduling, API keys, or dashboards.
 
 What is already decided and argued lives in [`docs/`](docs/), in French:
 [functional scope](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
 [entities, rights and security](docs/03-entites-droits-securite.md),
 [bot SDK](docs/15-sdk-bots.md), [execution lifecycle](docs/16-cycle-d-execution.md),
-[real time](docs/17-temps-reel.md),
+[real time](docs/17-temps-reel.md), [history and storage](docs/18-historique-et-stockage.md),
 [interface](docs/12-interface.md), [roadmap](docs/06-feuille-de-route.md).
 
 Isolation between organisations is proven by integration tests against a real PostgreSQL database:

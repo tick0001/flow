@@ -65,7 +65,7 @@ coupure réseau se rattrape sans perdre les lignes émises pendant l'absence.
 ## J5 — L'historique
 
 Liste et détail des exécutions, captures d'échec et traces dans le stockage de fichiers, rétention
-et purge, recherche dans les logs.
+et purge, recherche dans les logs. Voir [l'historique et le stockage](18-historique-et-stockage.md).
 
 Se termine quand une exécution en échec se diagnostique sans ouvrir un terminal : le message, la
 capture, la trace et la ligne de journal fautive sont à l'écran.

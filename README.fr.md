@@ -15,23 +15,23 @@ ITSM, dont Flow& reprend la pile technique, les conventions et l'écriture visue
 
 ## Où en est le projet
 
-**Jalon J4 sur onze. Les bots s'exécutent, et on les regarde travailler.** On dépose un dossier de
-bot, on le lance depuis l'interface avec un formulaire déduit de son schéma, et il tourne dans un
-worker séparé qui pilote Chromium. Le journal, la progression et la **vue en direct du navigateur**
-arrivent poussés par le serveur ; deux écrans ouverts sur la même exécution voient la même chose, et
-une coupure réseau se rattrape sans perdre une ligne.
+**Jalon J5 sur onze. Un échec se diagnostique à l'écran.** On dépose un dossier de bot, on le lance
+depuis l'interface avec un formulaire déduit de son schéma, et il tourne dans un worker séparé qui
+pilote Chromium. Le journal, la progression et la **vue en direct du navigateur** arrivent poussés
+par le serveur. Quand ça casse, la **capture au moment de l'échec** et la **trace Playwright** sont
+sur la page, avec le journal filtrable — sans ouvrir un terminal.
 
 Avant lui : l'arbre des entités, le Row-Level Security de PostgreSQL, les sessions, les droits,
-l'administration des comptes, les deux langues, le SDK de bots et l'exécution dans un worker séparé.
+l'administration des comptes, les deux langues, le SDK de bots, l'exécution dans un worker séparé et
+le temps réel.
 
-**Il n'y a pas encore** d'historique consultable en profondeur, ni de planification, ni de clés
-d'API.
+**Il n'y a pas encore** de planification, ni de clés d'API, ni de tableaux de bord.
 
 Ce qui est déjà décidé et argumenté vit dans [`docs/`](docs/) :
 [périmètre](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
 [entités, droits et sécurité](docs/03-entites-droits-securite.md),
 [SDK de bots](docs/15-sdk-bots.md), [cycle d'une exécution](docs/16-cycle-d-execution.md),
-[temps réel](docs/17-temps-reel.md),
+[temps réel](docs/17-temps-reel.md), [historique et stockage](docs/18-historique-et-stockage.md),
 [interface](docs/12-interface.md), [feuille de route](docs/06-feuille-de-route.md).
 
 Le cloisonnement entre organisations est prouvé par des tests d'intégration contre une vraie base

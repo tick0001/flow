@@ -14,8 +14,9 @@ communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas 
 ## Non publié
 
 **Aucune version n'est encore étiquetée**, et il n'y a donc rien à installer ni à mettre à jour.
-Le projet en est au jalon J4 sur onze : les bots s'exécutent dans un worker séparé, se lancent
-depuis l'interface, s'interrompent, et se regardent travailler en direct. La [feuille de route](docs/06-feuille-de-route.md) dit ce qui
+Le projet en est au jalon J5 sur onze : les bots s'exécutent dans un worker séparé, se lancent
+depuis l'interface, s'interrompent, se regardent travailler en direct, et leurs échecs se
+diagnostiquent à l'écran — capture, trace et journal filtrable. La [feuille de route](docs/06-feuille-de-route.md) dit ce qui
 vient ensuite.
 
 La première entrée de ce journal sera écrite quand une installation deviendra possible.
