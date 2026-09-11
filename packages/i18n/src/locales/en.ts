@@ -71,6 +71,7 @@ export const en: Traductions = {
     executions: 'Executions',
     planifications: 'Schedules',
     statistiques: 'Insights',
+    plugins: 'Extensions',
     reglages: 'Settings',
     retour: 'Back',
     ouvrirMenu: 'Open menu',
@@ -187,6 +188,40 @@ export const en: Traductions = {
     parBot: 'By bot',
     dernierEchec: 'Last failure',
   },
+  plugins: {
+    titre: 'Extensions',
+    intro:
+      'What extends the application without forking it: tables, rights, hook points and panels.',
+    avertissementTitre: 'Installing a plugin commits as much as deploying a release.',
+    avertissement:
+      'A plugin runs inside the API process, with its privileges. There is no sandbox: install only what you answer for.',
+    relire: 'Rescan the folder',
+    aucun: 'No plugins.',
+    aucunAide: 'Drop a plugin folder, then rescan.',
+    installer: 'Install',
+    activer: 'Enable',
+    desactiver: 'Disable',
+    desinstaller: 'Uninstall',
+    confirmerDesinstallation: 'Confirm uninstall',
+    avantDeDesinstaller:
+      'Its PostgreSQL schema, its data, the rights granted in profiles: all of it goes. There is no undo.',
+    schema: 'Database',
+    schemaOui: 'A PostgreSQL schema',
+    droits: 'Rights',
+    hooks: 'Hooks',
+    evenements: 'Events',
+    emplacements: 'Slots',
+    vues: 'Views',
+    taches: 'Tasks',
+    toutesLes: 'every {{minutes}} min',
+    etat: {
+      disponible: 'On disk',
+      actif: 'Active',
+      inactif: 'Dormant',
+      refuse: 'Refused',
+      orphelin: 'Orphan',
+    },
+  },
   planifications: {
     titre: 'Schedules',
     intro:
@@ -249,6 +284,7 @@ export const en: Traductions = {
       schedule: 'Schedules',
       apikey: 'API keys',
       stats: 'Insights',
+      plugin: 'Extensions',
     },
     portees: {
       aucune: 'None',
@@ -297,6 +333,10 @@ export const en: Traductions = {
     },
     stats: {
       read: 'View insights',
+    },
+    plugin: {
+      read: 'View extensions',
+      manage: 'Install and uninstall extensions',
     },
   },
   executions: {

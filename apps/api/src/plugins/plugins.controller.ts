@@ -6,6 +6,7 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  HttpCode,
   NotFoundException,
   Param,
   Post,
@@ -227,18 +228,30 @@ export class PluginsController {
   }
 
   @Post(':id/installer')
+  // 204 plutot que le 201 par defaut de NestJS : l'operation a reussi et il
+  // n'y a rien a en dire. Un 201 au corps vide se lit comme une ressource
+  // creee dont on aurait oublie de rendre la representation.
+  @HttpCode(204)
   @RequireRight('plugin', 'manage')
   async installer(@Param('id') id: string): Promise<void> {
     await this.installateur.installer(id);
   }
 
   @Post(':id/activer')
+  // 204 plutot que le 201 par defaut de NestJS : l'operation a reussi et il
+  // n'y a rien a en dire. Un 201 au corps vide se lit comme une ressource
+  // creee dont on aurait oublie de rendre la representation.
+  @HttpCode(204)
   @RequireRight('plugin', 'manage')
   async activer(@Param('id') id: string): Promise<void> {
     await this.installateur.basculer(id, true);
   }
 
   @Post(':id/desactiver')
+  // 204 plutot que le 201 par defaut de NestJS : l'operation a reussi et il
+  // n'y a rien a en dire. Un 201 au corps vide se lit comme une ressource
+  // creee dont on aurait oublie de rendre la representation.
+  @HttpCode(204)
   @RequireRight('plugin', 'manage')
   async desactiver(@Param('id') id: string): Promise<void> {
     await this.installateur.basculer(id, false);
@@ -246,6 +259,10 @@ export class PluginsController {
 
   /** Desinstalle : le schema, les droits et la ligne s'en vont. */
   @Delete(':id')
+  // 204 plutot que le 201 par defaut de NestJS : l'operation a reussi et il
+  // n'y a rien a en dire. Un 201 au corps vide se lit comme une ressource
+  // creee dont on aurait oublie de rendre la representation.
+  @HttpCode(204)
   @RequireRight('plugin', 'manage')
   async desinstaller(@Param('id') id: string): Promise<void> {
     await this.installateur.desinstaller(id);

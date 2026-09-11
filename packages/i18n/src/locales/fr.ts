@@ -70,6 +70,7 @@ export const fr = {
     executions: 'Exécutions',
     planifications: 'Planifications',
     statistiques: 'Pilotage',
+    plugins: 'Extensions',
     reglages: 'Réglages',
     retour: 'Retour',
     ouvrirMenu: 'Ouvrir le menu',
@@ -186,6 +187,40 @@ export const fr = {
     parBot: 'Par bot',
     dernierEchec: 'Dernier échec',
   },
+  plugins: {
+    titre: 'Extensions',
+    intro:
+      'Ce qui étend l’application sans la forker : des tables, des droits, des points d’accroche et des encarts.',
+    avertissementTitre: 'Installer un plugin engage autant que déployer une version.',
+    avertissement:
+      'Un plugin s’exécute dans le processus de l’API, avec ses privilèges. Il n’y a pas de bac à sable : n’installez que ce dont vous répondez.',
+    relire: 'Relire le dossier',
+    aucun: 'Aucun plugin.',
+    aucunAide: 'Déposez un dossier de plugin, puis relisez.',
+    installer: 'Installer',
+    activer: 'Activer',
+    desactiver: 'Désactiver',
+    desinstaller: 'Désinstaller',
+    confirmerDesinstallation: 'Confirmer la désinstallation',
+    avantDeDesinstaller:
+      'Son schéma PostgreSQL, ses données, les droits accordés dans les profils : tout part. C’est sans retour.',
+    schema: 'Base',
+    schemaOui: 'Un schéma PostgreSQL',
+    droits: 'Droits',
+    hooks: 'Accroches',
+    evenements: 'Événements',
+    emplacements: 'Emplacements',
+    vues: 'Vues',
+    taches: 'Tâches',
+    toutesLes: 'toutes les {{minutes}} min',
+    etat: {
+      disponible: 'Sur le disque',
+      actif: 'Actif',
+      inactif: 'En sommeil',
+      refuse: 'Refusé',
+      orphelin: 'Orphelin',
+    },
+  },
   planifications: {
     titre: 'Planifications',
     intro:
@@ -250,6 +285,7 @@ export const fr = {
       schedule: 'Planifications',
       apikey: 'Clés d’API',
       stats: 'Pilotage',
+      plugin: 'Extensions',
     },
     portees: {
       aucune: 'Aucun',
@@ -298,6 +334,10 @@ export const fr = {
     },
     stats: {
       read: 'Voir le pilotage',
+    },
+    plugin: {
+      read: 'Voir les extensions',
+      manage: 'Installer et désinstaller des extensions',
     },
   },
   executions: {

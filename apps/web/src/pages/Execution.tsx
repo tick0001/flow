@@ -15,6 +15,7 @@ import {
   PageHeader,
   Pastille,
 } from '@/components/ui/primitives';
+import { Emplacement } from '@/components/Emplacement';
 import { JournalDExecution } from '@/components/JournalDExecution';
 import { PiecesDExecution } from '@/components/PiecesDExecution';
 
@@ -188,6 +189,11 @@ export function Execution() {
       )}
 
       <PiecesDExecution executionId={execution.id} pieces={execution.artifacts} />
+
+      {/* Ce que les extensions ont a dire de cette execution. Au-dessus du
+          journal et sous les pieces : un encart de plugin commente le resultat,
+          il ne remplace pas ce que le coeur montre. */}
+      <Emplacement slot="execution.detail" contexte={{ executionId: execution.id }} />
 
       <JournalDExecution lignes={lignes} suivi={!termine} />
     </div>

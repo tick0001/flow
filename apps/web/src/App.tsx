@@ -10,6 +10,7 @@ import { Comptes } from '@/pages/Comptes';
 import { Clefs } from '@/pages/Clefs';
 import { Entites } from '@/pages/Entites';
 import { Pilotage } from '@/pages/Pilotage';
+import { Plugins } from '@/pages/Plugins';
 import { Planifications } from '@/pages/Planifications';
 import { Execution } from '@/pages/Execution';
 import { Executions } from '@/pages/Executions';
@@ -70,6 +71,7 @@ function Racine() {
         <Route path="/planifications" element={<Planifications />} />
         <Route path="/clefs" element={<Clefs />} />
         <Route path="/pilotage" element={<Pilotage />} />
+        <Route path="/extensions" element={<Plugins />} />
         <Route path="/entites" element={<Entites />} />
         <Route path="/comptes" element={<Comptes />} />
         <Route path="/profils" element={<Profils />} />

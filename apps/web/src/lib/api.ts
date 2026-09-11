@@ -79,9 +79,16 @@ async function requete<T>(chemin: string, init?: RequestInit): Promise<T> {
 
   if (!reponse.ok) throw await lireErreur(reponse);
 
-  if (reponse.status === 204) return undefined as T;
+  // Une reponse sans corps, et pas seulement une 204.
+  //
+  // NestJS repond 201 avec un corps vide a un gestionnaire qui ne rend rien, et
+  // `Response.json()` echoue alors sur « Unexpected end of JSON input » -- une
+  // erreur qui accuse l'analyse d'un corps qui n'existe pas, sur un appel qui a
+  // pourtant reussi. Le premier point d'entree sans retour l'a montre ; tous les
+  // suivants auraient retrouve le meme piege.
+  const texte = await reponse.text();
 
-  return (await reponse.json()) as T;
+  return (texte === '' ? undefined : JSON.parse(texte)) as T;
 }
 
 export const api = {

@@ -149,7 +149,8 @@ export function Coquille() {
           {(droit('entity', 'read') ??
             droit('user', 'read') ??
             droit('profile', 'read') ??
-            droit('apikey', 'read')) && (
+            droit('apikey', 'read') ??
+            droit('plugin', 'read')) && (
             <div className="space-y-0.5">
               <p className="text-faint px-3 pb-1 text-[11px] font-semibold tracking-wider uppercase">
                 {t('navigation.reglages')}
@@ -160,6 +161,9 @@ export function Coquille() {
                 <LienBarre to="/profils">{t('profils.titre')}</LienBarre>
               )}
               {droit('apikey', 'read') && <LienBarre to="/clefs">{t('clefs.titre')}</LienBarre>}
+              {droit('plugin', 'read') && (
+                <LienBarre to="/extensions">{t('plugins.titre')}</LienBarre>
+              )}
             </div>
           )}
         </nav>

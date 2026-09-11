@@ -8,6 +8,8 @@ import type {
   IssuedApiKey as IssuedApiKeyServeur,
   JourStats as JourStatsServeur,
   Pilotage as PilotageServeur,
+  PluginAsset as PluginAssetServeur,
+  PluginSummary as PluginSummaryServeur,
   Schedule as ScheduleServeur,
   ScheduleDetail as ScheduleDetailServeur,
   UserSummary as UserSummaryServeur,
@@ -32,6 +34,8 @@ export type {
   LogLevel,
   ProfileDetail,
   ProfileRef,
+  PluginSlot,
+  PluginState,
   ProfileRight,
   RightDefinition,
   RightScope,
@@ -71,6 +75,8 @@ export type IssuedApiKey = Transporte<IssuedApiKeyServeur>;
 export type CronPreview = Transporte<CronPreviewServeur>;
 export type JourStats = Transporte<JourStatsServeur>;
 export type Pilotage = Transporte<PilotageServeur>;
+export type PluginSummary = Transporte<PluginSummaryServeur>;
+export type PluginAsset = Transporte<PluginAssetServeur>;
 export type Schedule = Transporte<ScheduleServeur>;
 export type ScheduleDetail = Transporte<ScheduleDetailServeur>;
 

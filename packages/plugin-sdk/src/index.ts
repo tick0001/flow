@@ -126,7 +126,7 @@ export interface VueDuPlugin {
   name: string;
   /** Droit exige, sous la forme `objet:action` telle que le plugin l'a declaree. */
   right?: string | undefined;
-  run: (contexte: ContextePlugin, parametres: Record<string, string>) => Promise<unknown> | unknown;
+  run: (contexte: ContextePlugin, parametres: Record<string, string>) => unknown;
 }
 
 /** Une tache de fond : sa periode, et ce qu'elle fait. */

@@ -223,7 +223,8 @@ function Editeur({
   onAnnuler: () => void;
   onSupprimer?: (() => void) | undefined;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const langue = i18n.language === 'en' ? 'en' : 'fr';
   const [nom, setNom] = useState(profil?.name ?? '');
   const [commentaire, setCommentaire] = useState(profil?.comment ?? '');
   const [matrice, setMatrice] = useState<Matrice>(() =>
@@ -293,7 +294,7 @@ function Editeur({
         {groupes.map(([objet, definitions]) => (
           <fieldset key={objet} className="border-line border">
             <legend className="text-faint mx-2 px-1 text-[11px] font-semibold tracking-wider uppercase">
-              {t(`droits.objets.${objet}`)}
+              {libelleDuGroupe(objet, definitions, langue, t)}
             </legend>
             <div className="divide-line divide-y">
               {definitions.map((definition) => {
@@ -304,7 +305,7 @@ function Editeur({
                     key={cle}
                     className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm"
                   >
-                    <span className="text-ink">{t(definition.labelKey)}</span>
+                    <span className="text-ink">{libelle(definition, langue, t)}</span>
                     <Select
                       className="w-auto min-w-40"
                       value={matrice[cle] ?? ''}
@@ -347,4 +348,31 @@ function Editeur({
       </div>
     </form>
   );
+}
+
+/**
+ * Le libelle d'un droit.
+ *
+ * Un droit du coeur porte une clef, resolue dans les dictionnaires. Un droit de
+ * plugin porte son libelle avec lui : il arrive apres la construction de
+ * l'interface, et aucune clef ne peut donc l'attendre. Le libelle porte gagne
+ * quand il est la -- sans quoi la matrice afficherait la clef brute, ce
+ * qu'i18next rend faute de mieux.
+ */
+function libelle(
+  definition: RightDefinition,
+  langue: 'fr' | 'en',
+  t: (clef: string) => string,
+): string {
+  return definition.label?.[langue] ?? t(definition.labelKey);
+}
+
+/** Le libelle d'un groupe : le nom du plugin, ou la clef du coeur. */
+function libelleDuGroupe(
+  objet: string,
+  definitions: RightDefinition[],
+  langue: 'fr' | 'en',
+  t: (clef: string) => string,
+): string {
+  return definitions[0]?.groupLabel?.[langue] ?? t(`droits.objets.${objet}`);
 }
