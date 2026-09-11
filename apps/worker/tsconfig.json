@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // NodeNext herite de la base, et le paquet declare "type": "module" :
+    // l'emission se fait donc en modules ES. C'est l'inverse du choix de l'API,
+    // et pour une raison precise -- le worker charge les bots par un `import()`
+    // ordinaire, et un bot est un module ES. Aucun decorateur ici, donc rien qui
+    // reclame CommonJS.
+    "lib": ["ES2023"],
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

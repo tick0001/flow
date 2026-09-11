@@ -1,0 +1,31 @@
+{
+  "name": "@flow/worker",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "concurrently -n tsc,worker -c blue,magenta \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch --enable-source-maps dist/main.js\"",
+    "start": "node --enable-source-maps dist/main.js",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@flow/bot-sdk": "workspace:*",
+    "@flow/contracts": "workspace:*",
+    "@flow/db": "workspace:*",
+    "bullmq": "^6.3.4",
+    "ioredis": "^6.0.0",
+    "playwright": "^1.58.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "concurrently": "^10.0.5",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  }
+}

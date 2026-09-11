@@ -11,6 +11,12 @@ coverage/
 !.env.example
 
 storage/
+# Sorties des executions, en attendant le stockage de fichiers du jalon J5.
+donnees/
+# Bots ecrits par les tests du worker : ils vivent sous `apps/worker` pour que
+# Node y resolve `@flow/bot-sdk`, ce qu'un dossier temporaire du systeme ne
+# permettrait pas.
+.essais/
 *.log
 npm-debug.log*
 pnpm-debug.log*

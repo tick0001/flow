@@ -10,14 +10,24 @@ import {
   type ExecutionDetail,
   type ExecutionLog,
   type ExecutionLogsQuery,
-  type ExecutionStatus,
   type ExecutionSummary,
   type ExecutionsQuery,
-  type LogLevel,
   type RightScope,
   type StartExecution,
 } from '@flow/contracts';
-import { executions, sql, type SQL } from '@flow/db';
+import {
+  and,
+  asc,
+  desc,
+  entities,
+  eq,
+  executionLogs,
+  executions,
+  gt,
+  sql,
+  users,
+  type SQL,
+} from '@flow/db';
 import { displayNameOf } from '../common/display-name.js';
 import { requireContext } from '../common/request-context.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -27,64 +37,42 @@ import { ParameterValidatorService } from '../bots/parameter-validator.service.j
 import { QueueService } from '../queue/queue.service.js';
 
 /**
- * Une ligne telle que la requete la rend.
+ * Les colonnes que la liste et le detail lisent, declarees une fois.
  *
- * Les noms sont ceux des alias SQL : la requete joint `entities` et `users`, et
- * un objet imbrique ne se construit pas en SQL. L'assemblage se fait dans
- * `resumer`, une fois.
+ * La projection passe par le constructeur de requetes et non par du SQL brut, et
+ * ce n'est pas une affaire de gout : **Drizzle desactive l'analyseur de types de
+ * node-postgres pour les dates**, ses propres mappeurs s'en chargeant. Une
+ * requete brute rend donc `created_at` sous forme de chaine au format
+ * PostgreSQL, pendant que TypeScript croit tenir une `Date`. Le curseur de
+ * pagination appelle `toISOString()` dessus : ecrit en SQL brut, il echouait a la
+ * deuxieme page -- et seulement a la deuxieme page, c'est-a-dire jamais avant la
+ * cinquante-unieme execution.
  */
-interface LigneExecution extends Record<string, unknown> {
-  id: string;
-  botId: string;
-  botName: string;
-  botVersion: string;
-  status: ExecutionStatus;
-  headed: boolean;
-  entityId: number;
-  entityName: string;
-  requestedById: number;
-  firstName: string | null;
-  lastName: string | null;
-  username: string;
-  createdAt: Date;
-  startedAt: Date | null;
-  finishedAt: Date | null;
-  durationMs: number | null;
-  message: string | null;
-  progressStep: string | null;
-  progressPercent: number | null;
-  cancelRequestedAt: Date | null;
-  workerId: string | null;
-  parameters: Record<string, unknown>;
-  output: Record<string, unknown> | null;
-}
-
-/** Colonnes communes a la liste et au detail. Ecrites une fois. */
-const COLONNES = sql`
-  x.id                  AS "id",
-  x.bot_id              AS "botId",
-  x.bot_name            AS "botName",
-  x.bot_version         AS "botVersion",
-  x.status              AS "status",
-  x.headed              AS "headed",
-  x.entity_id           AS "entityId",
-  e.name                AS "entityName",
-  x.requested_by        AS "requestedById",
-  u.first_name          AS "firstName",
-  u.last_name           AS "lastName",
-  u.username            AS "username",
-  x.created_at          AS "createdAt",
-  x.started_at          AS "startedAt",
-  x.finished_at         AS "finishedAt",
-  x.duration_ms         AS "durationMs",
-  x.message             AS "message",
-  x.progress_step       AS "progressStep",
-  x.progress_percent    AS "progressPercent",
-  x.cancel_requested_at AS "cancelRequestedAt",
-  x.worker_id           AS "workerId",
-  x.parameters          AS "parameters",
-  x.output              AS "output"
-`;
+const PROJECTION = {
+  id: executions.id,
+  botId: executions.botId,
+  botName: executions.botName,
+  botVersion: executions.botVersion,
+  status: executions.status,
+  headed: executions.headed,
+  entityId: executions.entityId,
+  entityName: entities.name,
+  requestedById: executions.requestedBy,
+  firstName: users.firstName,
+  lastName: users.lastName,
+  username: users.username,
+  createdAt: executions.createdAt,
+  startedAt: executions.startedAt,
+  finishedAt: executions.finishedAt,
+  durationMs: executions.durationMs,
+  message: executions.message,
+  progressStep: executions.progressStep,
+  progressPercent: executions.progressPercent,
+  cancelRequestedAt: executions.cancelRequestedAt,
+  workerId: executions.workerId,
+  parameters: executions.parameters,
+  output: executions.output,
+};
 
 /**
  * Encodage du curseur de pagination.
@@ -108,6 +96,33 @@ function decoderCurseur(curseur: string): { createdAt: string; id: string } | nu
 
   return { createdAt: date, id };
 }
+
+/**
+ * La requete de lecture, hors de la classe.
+ *
+ * Dehors pour une raison de typage : c'est de son type de retour que
+ * `LigneExecution` est deduit, et une methode de la classe s'y refererait
+ * circulairement. Le type de la ligne suit donc la projection tout seul -- une
+ * colonne ajoutee a `PROJECTION` apparait partout sans qu'on redecrive rien.
+ */
+async function interroger(db: DatabaseService, conditions: SQL[], limite: number) {
+  return db.asUser((tx) =>
+    tx
+      .select(PROJECTION)
+      .from(executions)
+      // Des jointures internes et non externes : une execution a toujours une
+      // entite et un demandeur, tous deux en cle etrangere non nulle. Une
+      // jointure externe laisserait croire le contraire, et obligerait a traiter
+      // partout un cas qui ne peut pas arriver.
+      .innerJoin(entities, eq(entities.id, executions.entityId))
+      .innerJoin(users, eq(users.id, executions.requestedBy))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(executions.createdAt), desc(executions.id))
+      .limit(limite),
+  );
+}
+
+type LigneExecution = Awaited<ReturnType<typeof interroger>>[number];
 
 @Injectable()
 export class ExecutionsService {
@@ -183,11 +198,13 @@ export class ExecutionsService {
     requete: ExecutionsQuery,
   ): Promise<{ items: ExecutionSummary[]; nextCursor: string | null }> {
     const context = requireContext();
-    const conditions = [await this.restrictionDePortee()];
+    const conditions: SQL[] = [];
+    const portee = await this.restrictionDePortee();
 
-    if (requete.botId) conditions.push(sql`x.bot_id = ${requete.botId}`);
-    if (requete.status) conditions.push(sql`x.status = ${requete.status}::execution_status`);
-    if (requete.mine) conditions.push(sql`x.requested_by = ${context.userId}`);
+    if (portee) conditions.push(portee);
+    if (requete.botId) conditions.push(eq(executions.botId, requete.botId));
+    if (requete.status) conditions.push(eq(executions.status, requete.status));
+    if (requete.mine) conditions.push(eq(executions.requestedBy, context.userId));
 
     if (requete.cursor) {
       const curseur = decoderCurseur(requete.cursor);
@@ -197,14 +214,14 @@ export class ExecutionsService {
       // utile qu'une erreur.
       if (curseur) {
         conditions.push(
-          sql`(x.created_at, x.id) < (${curseur.createdAt}::timestamptz, ${curseur.id}::uuid)`,
+          sql`(${executions.createdAt}, ${executions.id}) < (${curseur.createdAt}::timestamptz, ${curseur.id}::uuid)`,
         );
       }
     }
 
     // Une ligne de plus que demande : c'est ce qui dit s'il y a une page
     // suivante, sans un COUNT(*) sur une table qui n'arrete pas de grossir.
-    const lignes = await this.interroger(conditions, requete.limit + 1);
+    const lignes = await interroger(this.db, conditions, requete.limit + 1);
     const page = lignes.slice(0, requete.limit);
     const suite = lignes.length > requete.limit ? page[page.length - 1] : undefined;
 
@@ -240,23 +257,19 @@ export class ExecutionsService {
   async logs(id: string, requete: ExecutionLogsQuery): Promise<ExecutionLog[]> {
     await this.lire(id);
 
-    const lignes = await this.db.asUser(async (tx) => {
-      const resultat = await tx.execute<{
-        seq: number;
-        at: Date;
-        level: LogLevel;
-        message: string;
-      }>(sql`
-        SELECT seq, at, level, message
-          FROM execution_logs
-         WHERE execution_id = ${id}::uuid
-           AND seq > ${requete.afterSeq}
-         ORDER BY seq
-         LIMIT ${requete.limit}
-      `);
-
-      return resultat.rows;
-    });
+    const lignes = await this.db.asUser((tx) =>
+      tx
+        .select({
+          seq: executionLogs.seq,
+          at: executionLogs.at,
+          level: executionLogs.level,
+          message: executionLogs.message,
+        })
+        .from(executionLogs)
+        .where(and(eq(executionLogs.executionId, id), gt(executionLogs.seq, requete.afterSeq)))
+        .orderBy(asc(executionLogs.seq))
+        .limit(requete.limit),
+    );
 
     return lignes.map((ligne) => ({ executionId: id, ...ligne }));
   }
@@ -270,10 +283,10 @@ export class ExecutionsService {
    * demande.
    *
    * La mise a jour conditionnelle fait office d'arbitre. Si un worker reclame
-   * l'execution au meme instant, l'un des deux perd : soit le `WHERE status =
-   * queued` ne trouve rien -- le worker a gagne, on diffuse --, soit la reclame
-   * du worker ne trouve rien et il passe son chemin. Comparer l'etat puis agir
-   * en deux temps aurait laisse les deux gagner.
+   * l'execution au meme instant, l'un des deux perd : soit le `status = queued`
+   * ne trouve rien -- le worker a gagne, on diffuse --, soit la reclamation du
+   * worker ne trouve rien et il passe son chemin. Comparer l'etat puis agir en
+   * deux temps aurait laisse les deux gagner.
    */
   async cancel(id: string): Promise<ExecutionDetail> {
     const ligne = await this.lire(id);
@@ -284,24 +297,18 @@ export class ExecutionsService {
 
     await this.verifierPorteeSurLAuteur(ligne.requestedById);
 
-    const [annulee] = await this.db.asUser(async (tx) => {
-      const resultat = await tx.execute<{ id: string }>(sql`
-        UPDATE executions
-           SET status = 'cancelled',
-               cancel_requested_at = now(),
-               finished_at = now()
-         WHERE id = ${id}::uuid
-           AND status = 'queued'
-        RETURNING id
-      `);
-
-      return resultat.rows;
-    });
+    const [annulee] = await this.db.asUser((tx) =>
+      tx
+        .update(executions)
+        .set({ status: 'cancelled', cancelRequestedAt: sql`now()`, finishedAt: sql`now()` })
+        .where(and(eq(executions.id, id), eq(executions.status, 'queued')))
+        .returning({ id: executions.id }),
+    );
 
     if (annulee) {
       // Elle n'a jamais demarre : ni duree, ni message. Le statut et l'absence de
-      // `startedAt` disent tout, et un message francais en base serait lu par
-      // quelqu'un qui travaille en anglais.
+      // `startedAt` disent tout, et une phrase en francais posee en base serait
+      // lue par quelqu'un qui travaille en anglais.
       await this.file.remove(id);
 
       return this.get(id);
@@ -310,11 +317,10 @@ export class ExecutionsService {
     // Elle tourne. L'intention est ecrite avant d'etre diffusee : un worker qui
     // redemarre la relit, un worker qui n'ecoutait pas la voit a son battement.
     await this.db.asUser((tx) =>
-      tx.execute(sql`
-        UPDATE executions
-           SET cancel_requested_at = COALESCE(cancel_requested_at, now())
-         WHERE id = ${id}::uuid
-      `),
+      tx
+        .update(executions)
+        .set({ cancelRequestedAt: sql`COALESCE(${executions.cancelRequestedAt}, now())` })
+        .where(eq(executions.id, id)),
     );
 
     await this.file.publishCancel(id);
@@ -325,10 +331,12 @@ export class ExecutionsService {
   // --- interne ---------------------------------------------------------------
 
   private async lire(id: string): Promise<LigneExecution> {
-    const [ligne] = await this.interroger(
-      [await this.restrictionDePortee(), sql`x.id = ${id}::uuid`],
-      1,
-    );
+    const conditions: SQL[] = [eq(executions.id, id)];
+    const portee = await this.restrictionDePortee();
+
+    if (portee) conditions.push(portee);
+
+    const [ligne] = await interroger(this.db, conditions, 1);
 
     // Invisible et inexistante rendent la meme reponse : distinguer les deux
     // confirmerait l'existence d'une execution d'une autre organisation.
@@ -337,41 +345,25 @@ export class ExecutionsService {
     return ligne;
   }
 
-  private async interroger(conditions: SQL[], limite: number): Promise<LigneExecution[]> {
-    return this.db.asUser(async (tx) => {
-      const resultat = await tx.execute<LigneExecution>(sql`
-        SELECT ${COLONNES}
-          FROM executions x
-          JOIN entities e ON e.id = x.entity_id
-          JOIN users u ON u.id = x.requested_by
-         WHERE ${sql.join(conditions, sql` AND `)}
-         ORDER BY x.created_at DESC, x.id DESC
-         LIMIT ${limite}
-      `);
-
-      return resultat.rows;
-    });
-  }
-
   /**
    * Ce que la portee du droit retire, en plus de ce que le cloisonnement retire
    * deja.
    *
    * Le Row-Level Security borne la lecture au perimetre de travail : c'est
-   * l'enveloppe extérieure, et rien n'en sort. La portee du droit resserre a
+   * l'enveloppe exterieure, et rien n'en sort. La portee du droit resserre a
    * l'interieur -- `own` aux siennes, `entity` a l'entite active sans sa
    * descendance. `recursive` et `all` n'ajoutent rien : le perimetre est deja
    * leur plafond, et ecrire une clause qui ne filtre rien laisserait croire
    * qu'elle protege quelque chose.
    */
-  private async restrictionDePortee(): Promise<SQL> {
+  private async restrictionDePortee(): Promise<SQL | undefined> {
     const context = requireContext();
     const portee = await this.rights.scopeFor(context.profileId, 'execution', 'read');
 
-    if (portee === 'own') return sql`x.requested_by = ${context.userId}`;
-    if (portee === 'entity') return sql`x.entity_id = ${context.entityId}`;
+    if (portee === 'own') return eq(executions.requestedBy, context.userId);
+    if (portee === 'entity') return eq(executions.entityId, context.entityId);
 
-    return sql`true`;
+    return undefined;
   }
 
   /** Refuse une interruption que la portee du droit ne couvre pas. */
