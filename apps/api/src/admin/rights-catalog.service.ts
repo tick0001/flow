@@ -94,6 +94,13 @@ export class RightsCatalogService {
     // L'accorder revient a accorder le droit de deployer du code.
     droit('plugin', 'read', ['all']),
     droit('plugin', 'manage', ['all']),
+
+    // Les regles d'affectation portent une entite, et se cloisonnent donc
+    // comme le reste. `manage` y est plus lourd qu'il n'y parait : une regle
+    // est une elevation de privileges differee, qui s'appliquera a la
+    // prochaine connexion de quelqu'un qu'on ne connait pas encore.
+    droit('directory', 'read', SANS_AUTEUR),
+    droit('directory', 'manage', SANS_AUTEUR),
   ];
 
   private readonly parPlugin = new Map<string, RightDefinition[]>();

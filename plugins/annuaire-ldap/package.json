@@ -1,0 +1,24 @@
+{
+  "name": "@flow/plugin-annuaire-ldap",
+  "license": "AGPL-3.0-or-later",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup && flow-plugin manifeste dist/index.js",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@flow/plugin-sdk": "workspace:*",
+    "ldapts": "^8.0.13"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0",
+    "@types/node": "^26.4.1"
+  }
+}

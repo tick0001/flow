@@ -78,6 +78,31 @@ export interface ChargeAvantLancement {
   userId: number;
 }
 
+/** Ce qu'un hook d'authentification recoit. */
+export interface ChargeAuthentification {
+  username: string;
+  password: string;
+}
+
+/**
+ * Ce qu'un plugin rend quand il reconnait quelqu'un.
+ *
+ * `groups` porte les groupes de l'annuaire, tels quels. Le plugin ne decide pas
+ * des droits : c'est le coeur qui applique les regles d'affectation, parce
+ * qu'un profil et une entite sont des objets du coeur et que deux plugins ne
+ * doivent pas en avoir deux lectures differentes.
+ *
+ * `externalId` est l'identifiant de la personne dans la source -- un DN pour un
+ * annuaire. Conserve pour qu'un compte renomme reste le meme compte.
+ */
+export interface IdentiteExterne {
+  username: string;
+  externalId: string;
+  displayName?: string | undefined;
+  email?: string | undefined;
+  groups: string[];
+}
+
 /** Une execution vient de partir. */
 export interface ChargeExecutionLancee {
   executionId: string;
@@ -104,6 +129,27 @@ export interface ChargeExecutionTerminee extends ChargeExecutionLancee {
 export interface HooksDuPlugin {
   'execution.avant-lancement'?:
     ((contexte: ContextePlugin, charge: ChargeAvantLancement) => Promise<void> | void) | undefined;
+
+  /**
+   * Reconnait quelqu'un, ou rend `null`.
+   *
+   * Appele **apres** la base locale, et seulement si elle n'a pas reconnu la
+   * personne. Un compte d'administration de secours n'est donc jamais bloque
+   * par un annuaire injoignable -- c'est la raison de cet ordre, et elle vaut
+   * plus que l'economie d'une requete.
+   *
+   * Le premier plugin qui rend une identite l'emporte. Celui qui leve est
+   * journalise et le suivant est interroge : ne pas repondre n'authentifie
+   * personne, ce qui est deja le cote ferme.
+   *
+   * Le contexte n'a **pas d'acteur** : personne n'est encore connecte.
+   */
+  'authentification.verifier'?:
+    | ((
+        contexte: ContextePlugin,
+        charge: ChargeAuthentification,
+      ) => Promise<IdentiteExterne | null> | IdentiteExterne | null)
+    | undefined;
 }
 
 /** Les abonnements aux evenements, par nom. */

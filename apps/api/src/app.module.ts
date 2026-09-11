@@ -11,6 +11,7 @@ import { SchedulesModule } from './schedules/schedules.module.js';
 import { ApiKeysModule } from './apikeys/apikeys.module.js';
 import { StatsModule } from './stats/stats.module.js';
 import { PluginsModule } from './plugins/plugins.module.js';
+import { DirectoryModule } from './directory/directory.module.js';
 import { StorageModule } from './storage/storage.module.js';
 
 @Module({
@@ -28,6 +29,7 @@ import { StorageModule } from './storage/storage.module.js';
     ApiKeysModule,
     StatsModule,
     PluginsModule,
+    DirectoryModule,
   ],
 })
 export class AppModule {}

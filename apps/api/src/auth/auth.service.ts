@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { AvailableContext, SessionContext } from '@flow/contracts';
@@ -15,6 +16,18 @@ import { PasswordService } from './password.service.js';
 import { RightsService } from './rights.service.js';
 import { ScopeService, type AuthorizedEntity } from './scope.service.js';
 import { SessionService, type IssuedSession, type SessionRecord } from './session.service.js';
+import { PluginHooksService } from '../plugins/hooks.service.js';
+import { ProvisioningService } from '../directory/provisioning.service.js';
+
+/** Ce que les deux voies d'authentification rendent en commun. */
+interface CompteAuthentifie {
+  id: number;
+  username: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  defaultEntityId: number | null;
+  passwordHash: string | null;
+}
 
 export interface LoginMetadata {
   userAgent?: string | undefined;
@@ -38,6 +51,8 @@ function toAvailableContext(ligne: AuthorizedEntity): AvailableContext {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly db: DatabaseService,
     private readonly passwords: PasswordService,
@@ -45,6 +60,8 @@ export class AuthService {
     private readonly scopes: ScopeService,
     private readonly rights: RightsService,
     private readonly throttle: LoginThrottleService,
+    private readonly hooks: PluginHooksService,
+    private readonly provisioning: ProvisioningService,
   ) {}
 
   /**
@@ -68,10 +85,10 @@ export class AuthService {
       );
     }
 
-    const compte = await this.findByUsername(username);
-    const valide = await this.passwords.verify(compte?.passwordHash ?? null, password);
+    const compte =
+      (await this.localement(username, password)) ?? (await this.parAnnuaire(username, password));
 
-    if (!compte || !valide || !compte.isActive) {
+    if (!compte || !compte.isActive) {
       this.throttle.registerFailure(metadata.ipAddress, username);
 
       throw new UnauthorizedException('Identifiants invalides.');
@@ -200,6 +217,53 @@ export class AuthService {
 
   async logout(sessionId: string): Promise<void> {
     await this.sessions.revoke(sessionId);
+  }
+
+  /**
+   * La base locale, et elle seule.
+   *
+   * **Interrogee en premier, toujours.** C'est ce qui garantit qu'un compte
+   * d'administration de secours n'est jamais bloque par un annuaire injoignable
+   * -- et cela vaut bien plus que l'economie d'une requete. Une installation
+   * dont l'annuaire tombe doit rester administrable.
+   *
+   * Le hachage est verifie meme quand le compte n'existe pas : la fonction de
+   * verification compare alors contre un faux condensat, pour que le temps de
+   * reponse ne dise pas si l'identifiant existe.
+   */
+  private async localement(username: string, password: string): Promise<CompteAuthentifie | null> {
+    const compte = await this.findByUsername(username);
+    const valide = await this.passwords.verify(compte?.passwordHash ?? null, password);
+
+    return compte && valide ? compte : null;
+  }
+
+  /**
+   * Les sources externes, apportees par les plugins.
+   *
+   * Sans plugin d'annuaire installe, cette voie ne coute rien : le bus rend la
+   * main immediatement quand personne n'accroche le point.
+   *
+   * Ce qui est provisionne l'est **a la volee** : le compte est cree ou mis a
+   * jour, et ses habilitations dynamiques sont recalculees depuis ses groupes.
+   * Un import prealable n'aurait rien apporte qu'une liste a tenir a jour, et
+   * aurait fait dependre la premiere connexion d'une synchronisation reussie.
+   */
+  private async parAnnuaire(username: string, password: string): Promise<CompteAuthentifie | null> {
+    const reconnu = await this.hooks.identifier(username, password);
+
+    if (!reconnu) return null;
+
+    const pourvu = await this.provisioning.pourvoir(reconnu.identite);
+
+    if (!pourvu) return null;
+
+    this.logger.log(
+      `${username} reconnu par ${reconnu.pluginId} : ${String(pourvu.trace.groups.length)} groupe(s), ` +
+        `${String(pourvu.trace.matched.length)} regle(s) applicable(s).`,
+    );
+
+    return { ...pourvu.compte, passwordHash: null };
   }
 
   private async findByUsername(username: string) {

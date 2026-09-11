@@ -21,3 +21,4 @@ export * from './modules/schedules.js';
 export * from './modules/apikeys.js';
 export * from './modules/stats.js';
 export * from './modules/plugins.js';
+export * from './modules/directory.js';

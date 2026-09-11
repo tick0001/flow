@@ -120,7 +120,7 @@ export class PluginHostService {
   }
 
   /** Les plugins qui accrochent ce point, dans un ordre stable. */
-  pourHook(nom: 'execution.avant-lancement'): PluginCharge[] {
+  pourHook(nom: 'execution.avant-lancement' | 'authentification.verifier'): PluginCharge[] {
     return this.all()
       .filter((charge) => typeof charge.instance.hooks?.[nom] === 'function')
       .sort((a, b) => a.manifest.id.localeCompare(b.manifest.id));

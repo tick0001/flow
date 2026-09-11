@@ -64,6 +64,46 @@ services:
       timeout: 5s
       retries: 10
 
+  # Annuaire de developpement, pour le plugin LDAP.
+  #
+  # Il ne demarre **pas par defaut** : `--profile annuaire` le lance. Une
+  # installation n'a pas besoin d'un annuaire pour tourner, et le demarrer
+  # d'office ferait payer a tout le monde un conteneur que la plupart des
+  # journees de travail n'ouvrent jamais.
+  #
+  #     docker compose -f docker/compose.yaml --profile annuaire up -d
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: flow-openldap
+    profiles: ['annuaire']
+    restart: unless-stopped
+    environment:
+      LDAP_ORGANISATION: Flow
+      LDAP_DOMAIN: flow.test
+      LDAP_ADMIN_PASSWORD: annuaire
+      # Les comptes et les groupes de developpement sont poses au premier
+      # demarrage, depuis le dossier monte ci-dessous.
+      LDAP_SEED_INTERNAL_LDIF_PATH: /container/service/slapd/assets/config/bootstrap/ldif/custom
+    command: ['--copy-service']
+    ports:
+      # 1390, et non 1389 : Tick& tient deja le 1389, comme il tient le 5432.
+      - '${FLOW_LDAP_PORT:-1390}:389'
+    volumes:
+      - ./ldap:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
+      - openldap-data:/var/lib/ldap
+      - openldap-config:/etc/ldap/slapd.d
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'ldapsearch -x -H ldap://localhost -b dc=flow,dc=test -D "cn=admin,dc=flow,dc=test" -w annuaire > /dev/null',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
 volumes:
   postgres-data:
   redis-data:
+  openldap-data:
+  openldap-config:

@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
-import type { ChargeAvantLancement } from '@flow/plugin-sdk';
+import type { ChargeAvantLancement, IdentiteExterne } from '@flow/plugin-sdk';
 import { loadEnv } from '../config/env.js';
 import { requireContext } from '../common/request-context.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -69,6 +69,61 @@ export class PluginHooksService {
         throw this.refus(plugin.manifest.id, plugin.manifest.name, erreur);
       }
     }
+  }
+
+  /**
+   * Demande aux plugins s'ils reconnaissent quelqu'un.
+   *
+   * **L'autre forme de hook**, et l'occasion de dire pourquoi il y en a deux.
+   * Un veto refuse quand personne ne repond ; celui-ci n'authentifie personne
+   * quand personne ne repond. Les deux echouent du cote ferme, par des chemins
+   * opposes -- et les confondre aurait donne soit un annuaire injoignable qui
+   * bloque toute l'application, soit un veto qu'une lenteur suffit a contourner.
+   *
+   * D'ou le traitement des pannes : un plugin qui leve est journalise, et le
+   * suivant est interroge. Refuser la connexion entiere parce qu'un annuaire
+   * parmi deux est tombe priverait les comptes de l'autre sans raison.
+   *
+   * Le contexte n'a **pas d'acteur** : personne n'est encore connecte. Les
+   * requetes du plugin passent donc par le role proprietaire, ce que la note du
+   * jalon J8 dit deja des taches de fond.
+   */
+  async identifier(
+    username: string,
+    password: string,
+  ): Promise<{ identite: IdentiteExterne; pluginId: string } | null> {
+    const abonnes = this.hote.pourHook('authentification.verifier');
+
+    if (abonnes.length === 0) return null;
+
+    const delai = loadEnv().PLUGIN_HOOK_TIMEOUT_MS;
+
+    for (const plugin of abonnes) {
+      const fonction = plugin.instance.hooks?.['authentification.verifier'];
+
+      if (!fonction) continue;
+
+      const contexte = contextePour(this.db, plugin.manifest.id, plugin.schema, null);
+
+      try {
+        const identite = await this.borner(
+          Promise.resolve(fonction(contexte, { username, password })),
+          delai,
+        );
+
+        // Le premier qui reconnait l'emporte. Interroger les suivants ne
+        // servirait qu'a donner deux reponses possibles pour une personne.
+        if (identite) return { identite, pluginId: plugin.manifest.id };
+      } catch (erreur: unknown) {
+        this.logger.error(
+          `${plugin.manifest.id} n'a pas su repondre pour ${username} : ${
+            erreur instanceof Error ? erreur.message : String(erreur)
+          }`,
+        );
+      }
+    }
+
+    return null;
   }
 
   /**

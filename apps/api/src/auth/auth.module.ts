@@ -1,5 +1,7 @@
 import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { PluginRuntimeModule } from '../plugins/runtime.module.js';
+import { ProvisioningService } from '../directory/provisioning.service.js';
 import { AuthController } from './auth.controller.js';
 import { ApiKeyService } from './api-key.service.js';
 import { AuthService } from './auth.service.js';
@@ -14,9 +16,11 @@ import { PasswordChangeGuard } from './guards/password-change.guard.js';
 import { RightsGuard } from './guards/rights.guard.js';
 
 @Module({
+  imports: [PluginRuntimeModule],
   controllers: [AuthController],
   providers: [
     AuthService,
+    ProvisioningService,
     ApiKeyService,
     PasswordService,
     SessionService,
@@ -32,6 +36,7 @@ import { RightsGuard } from './guards/rights.guard.js';
   ],
   exports: [
     AuthService,
+    ProvisioningService,
     ApiKeyService,
     PasswordService,
     ScopeService,

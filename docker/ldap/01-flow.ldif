@@ -1,0 +1,59 @@
+# Annuaire de developpement.
+#
+# Deux branches, deux groupes, deux comptes : le minimum pour que la question
+# interessante ait un sens -- « Exploitation » recoit un profil sur une entite,
+# « Lecture » un autre, et l'on verifie que chacun herite de ce que sa regle dit.
+#
+# Les mots de passe sont en clair et dans le depot : cet annuaire n'existe que
+# sur la machine de developpement, au meme titre que « flow/flow » pour
+# PostgreSQL. Aucune installation reelle ne le demarre.
+
+dn: ou=personnes,dc=flow,dc=test
+objectClass: organizationalUnit
+ou: personnes
+
+dn: ou=groupes,dc=flow,dc=test
+objectClass: organizationalUnit
+ou: groupes
+
+dn: uid=a.dupont,ou=personnes,dc=flow,dc=test
+objectClass: inetOrgPerson
+objectClass: top
+uid: a.dupont
+cn: Amelie Dupont
+sn: Dupont
+givenName: Amelie
+mail: a.dupont@flow.test
+userPassword: annuaire-dupont
+
+dn: uid=m.bernard,ou=personnes,dc=flow,dc=test
+objectClass: inetOrgPerson
+objectClass: top
+uid: m.bernard
+cn: Marc Bernard
+sn: Bernard
+givenName: Marc
+mail: m.bernard@flow.test
+userPassword: annuaire-bernard
+
+dn: uid=s.sansgroupe,ou=personnes,dc=flow,dc=test
+objectClass: inetOrgPerson
+objectClass: top
+uid: s.sansgroupe
+cn: Sonia Sansgroupe
+sn: Sansgroupe
+givenName: Sonia
+mail: s.sansgroupe@flow.test
+userPassword: annuaire-sansgroupe
+
+dn: cn=Exploitation,ou=groupes,dc=flow,dc=test
+objectClass: groupOfNames
+objectClass: top
+cn: Exploitation
+member: uid=a.dupont,ou=personnes,dc=flow,dc=test
+
+dn: cn=Lecture,ou=groupes,dc=flow,dc=test
+objectClass: groupOfNames
+objectClass: top
+cn: Lecture
+member: uid=m.bernard,ou=personnes,dc=flow,dc=test

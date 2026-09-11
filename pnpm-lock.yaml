@@ -389,6 +389,28 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@26.5.1)(@vitest/coverage-v8@5.0.0)(happy-dom@20.14.0)(vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
 
+  plugins/annuaire-ldap:
+    dependencies:
+      '@flow/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
+      ldapts:
+        specifier: ^8.0.13
+        version: 8.2.0
+    devDependencies:
+      '@types/node':
+        specifier: ^26.4.1
+        version: 26.5.1
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.28)(supports-color@10.2.2)(tsx@4.23.13)(typescript@6.0.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@26.5.1)(@vitest/coverage-v8@5.0.0)(happy-dom@20.14.0)(vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+
   plugins/exemple-carnet:
     dependencies:
       '@flow/plugin-sdk':
@@ -2750,6 +2772,10 @@ packages:
   keyv@5.6.0:
     resolution: {integrity: sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw==}
 
+  ldapts@8.2.0:
+    resolution: {integrity: sha512-XfKocadpoHc1kNgtbTBBhD+pSh1U9KVTzxcKwDS4ulFFyC7rJkLC3TwIfbQ4rt3my9KHz8qsw9qFXVjcPOGebw==}
+    engines: {node: '>=20'}
+
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
@@ -3390,6 +3416,9 @@ packages:
   streamsearch@1.1.0:
     resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
     engines: {node: '>=10.0.0'}
+
+  strict-event-emitter-types@2.0.0:
+    resolution: {integrity: sha512-Nk/brWYpD85WlOgzw5h173aci0Teyv8YdIAEtV+N88nDB0dLlazZyJMIsN6eo1/AR61l+p6CJTG1JIyFaoNEEA==}
 
   string-width@7.2.0:
     resolution: {integrity: sha512-tsaTIkKW9b4N+AEj+SVA+WhJzV7/zMhcSu78mLKWSk7cXMOSHsBKFWUs0fWwq8QyK3MgJBQRX6Gbi4kYbdvGkQ==}
@@ -5524,6 +5553,10 @@ snapshots:
     dependencies:
       '@keyv/serialize': 1.1.1
 
+  ldapts@8.2.0:
+    dependencies:
+      strict-event-emitter-types: 2.0.0
+
   levn@0.4.1:
     dependencies:
       prelude-ls: 1.2.1
@@ -6109,6 +6142,8 @@ snapshots:
   std-env@4.2.0: {}
 
   streamsearch@1.1.0: {}
+
+  strict-event-emitter-types@2.0.0: {}
 
   string-width@7.2.0:
     dependencies:

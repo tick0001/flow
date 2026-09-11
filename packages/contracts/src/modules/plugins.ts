@@ -81,8 +81,19 @@ export type PluginSurface = z.infer<typeof pluginSurfaceSchema>;
  *
  * La liste est courte, et le restera tant qu'un besoin reel ne l'allonge pas :
  * chaque point d'accroche est une promesse de compatibilite.
+ *
+ * Deux formes s'y cotoient, et la difference merite d'etre vue :
+ *
+ *  - `execution.avant-lancement` **oppose un veto**. Qui ne repond pas n'a pas
+ *    dit oui, et l'operation est donc refusee ;
+ *  - `authentification.verifier` **repond une identite, ou rien**. Qui ne repond
+ *    pas n'authentifie personne, et la connexion echoue.
+ *
+ * Les deux echouent donc du cote ferme, par des chemins opposes. Les confondre
+ * aurait donne soit un annuaire injoignable qui bloque toute l'application, soit
+ * un veto qu'une lenteur suffit a contourner.
  */
-export const pluginHookSchema = z.enum(['execution.avant-lancement']);
+export const pluginHookSchema = z.enum(['execution.avant-lancement', 'authentification.verifier']);
 export type PluginHook = z.infer<typeof pluginHookSchema>;
 
 /**
