@@ -1,5 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { entities, eq, executionLogs, executions, withRequestContext } from '../index.js';
+import {
+  entities,
+  eq,
+  executionArtifacts,
+  executionLogs,
+  executions,
+  withRequestContext,
+} from '../index.js';
 import {
   createFixture,
   entityId,
@@ -81,6 +88,25 @@ describe('Cloisonnement des executions', () => {
         .select({ seq: executionLogs.seq })
         .from(executionLogs)
         .where(eq(executionLogs.executionId, deNord)),
+    );
+
+    expect(duSiege).toEqual([]);
+  });
+
+  it('fait suivre aux pieces la visibilite de leur execution', async () => {
+    // La table qui porte les captures d'ecran de pages authentifiees : une fuite
+    // y coute plus cher que sur l'arbre des entites lui-meme.
+    const duNord = await withRequestContext(fixture.app.db, exactly(chemin('nord')), (tx) =>
+      tx.select({ name: executionArtifacts.name }).from(executionArtifacts),
+    );
+
+    expect(duNord).toHaveLength(1);
+
+    const duSiege = await withRequestContext(fixture.app.db, exactly(chemin('siege')), (tx) =>
+      tx
+        .select({ name: executionArtifacts.name })
+        .from(executionArtifacts)
+        .where(eq(executionArtifacts.executionId, deNord)),
     );
 
     expect(duSiege).toEqual([]);

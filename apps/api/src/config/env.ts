@@ -79,6 +79,25 @@ const envSchema = z.object({
    */
   BOTS_PATH: z.string().min(1).default('./bots'),
 
+  /**
+   * Racine du stockage de fichiers.
+   *
+   * **Le meme dossier que le worker.** Il ecrit les captures et les traces,
+   * l'API les sert -- jamais par un chemin statique devinable, toujours par une
+   * route qui verifie le cloisonnement.
+   */
+  STORAGE_PATH: z.string().min(1).default('./donnees/stockage'),
+
+  /**
+   * Duree de conservation par defaut des executions, en jours.
+   *
+   * Une entite peut la raccourcir ou l'allonger ; celle-ci s'applique quand rien
+   * n'est regle, jusqu'a la racine de l'arbre. Zero **desactive la purge**, ce
+   * qui est un choix legitime -- un historique qui ne s'efface jamais -- mais qui
+   * doit s'ecrire, pas se subir.
+   */
+  EXECUTION_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(90),
+
   DEFAULT_LOCALE: z.enum(['fr', 'en']).default('fr'),
   LOG_LEVEL: z.enum(['error', 'warn', 'log', 'debug', 'verbose']).default('log'),
 

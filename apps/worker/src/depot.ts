@@ -1,5 +1,6 @@
 import {
   createDatabase,
+  executionArtifacts,
   inArray,
   executionLogs,
   executions,
@@ -8,7 +9,7 @@ import {
   type Connection,
   type RequestContext,
 } from '@flow/db';
-import type { ExecutionStatus, LogLevel } from '@flow/contracts';
+import type { ArtifactKind, ExecutionStatus, LogLevel } from '@flow/contracts';
 import { loadEnv } from './config/env.js';
 import { journalDe } from './log.js';
 
@@ -204,6 +205,30 @@ export class Depot {
     );
 
     return lignes.filter((ligne) => ligne.cancelRequestedAt !== null).map((ligne) => ligne.id);
+  }
+
+  /**
+   * Enregistre une piece deja ecrite dans le stockage.
+   *
+   * Sous le contexte de l'execution, comme le journal : une piece est aussi
+   * cloisonnee que la trace a laquelle elle appartient, et une capture d'ecran
+   * de page authentifiee est ce qu'on veut le moins voir fuiter.
+   */
+  async enregistrerPiece(
+    context: RequestContext,
+    piece: {
+      id: string;
+      executionId: string;
+      kind: ArtifactKind;
+      name: string;
+      contentType: string;
+      sizeBytes: number;
+      storageKey: string;
+    },
+  ): Promise<void> {
+    await withRequestContext(this.app.db, context, (tx) =>
+      tx.insert(executionArtifacts).values(piece),
+    );
   }
 
   /**

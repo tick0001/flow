@@ -5,6 +5,7 @@ import { QueueModule } from '../queue/queue.module.js';
 import { ExecutionMaintenanceService } from './maintenance.service.js';
 import { ExecutionsController } from './executions.controller.js';
 import { ExecutionsService } from './executions.service.js';
+import { ExecutionPurgeService } from './purge.service.js';
 import { ExecutionRelayService } from './relais.service.js';
 import { ExecutionStreamService } from './stream.service.js';
 
@@ -16,6 +17,7 @@ import { ExecutionStreamService } from './stream.service.js';
     ExecutionMaintenanceService,
     ExecutionRelayService,
     ExecutionStreamService,
+    ExecutionPurgeService,
   ],
   exports: [ExecutionsService],
 })

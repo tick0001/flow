@@ -89,6 +89,34 @@ export const executionProgressSchema = z.object({
 });
 export type ExecutionProgress = z.infer<typeof executionProgressSchema>;
 
+/**
+ * Nature d'une piece produite par une execution.
+ *
+ * Trois valeurs, et la distinction decide de l'affichage : une capture se
+ * montre, une trace se telecharge et s'ouvre dans l'outil de Playwright, un
+ * fichier de sortie appartient au bot -- le coeur n'en sait rien et se garde
+ * d'en presumer.
+ */
+export const artifactKindSchema = z.enum(['screenshot', 'trace', 'output']);
+export type ArtifactKind = z.infer<typeof artifactKindSchema>;
+
+/**
+ * Une piece, telle que l'interface la liste.
+ *
+ * **Aucune adresse de telechargement ici.** Le client demande une piece par son
+ * identifiant, sur une route qui verifie le cloisonnement ; publier un chemin de
+ * stockage l'aurait rendu devinable, et aurait contourne tout le reste.
+ */
+export const executionArtifactSchema = z.object({
+  id: z.uuid(),
+  kind: artifactKindSchema,
+  name: z.string().max(200),
+  contentType: z.string().max(120),
+  sizeBytes: z.number().int().nonnegative(),
+  createdAt: z.coerce.date(),
+});
+export type ExecutionArtifact = z.infer<typeof executionArtifactSchema>;
+
 /** Une image du navigateur, diffusee pendant un run visible. */
 export const executionFrameSchema = z.object({
   executionId: z.uuid(),
@@ -173,6 +201,15 @@ export const executionDetailSchema = executionSummarySchema.extend({
    * une demande est asynchrone par nature, le worker la voit entre deux etapes.
    */
   cancelRequested: z.boolean(),
+
+  /**
+   * Les pieces produites : capture d'echec, trace, fichiers deposes.
+   *
+   * Dans le detail et non dans le resume : une liste de cinquante executions n'a
+   * que faire de leurs pieces, et les joindre y ferait cinquante requetes de
+   * plus pour une colonne que personne ne regarde.
+   */
+  artifacts: z.array(executionArtifactSchema),
 });
 export type ExecutionDetail = z.infer<typeof executionDetailSchema>;
 
@@ -215,6 +252,9 @@ export const executionsQuerySchema = z.object({
     .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
     .transform((valeur) => valeur === true || valeur === 'true' || valeur === '1')
     .optional(),
+  /** Bornes de la periode, incluses. Utiles pour retrouver « ce jour-la ». */
+  depuis: z.coerce.date().optional(),
+  jusqua: z.coerce.date().optional(),
 });
 export type ExecutionsQuery = z.infer<typeof executionsQuerySchema>;
 
@@ -228,5 +268,21 @@ export type ExecutionsQuery = z.infer<typeof executionsQuerySchema>;
 export const executionLogsQuerySchema = z.object({
   afterSeq: z.coerce.number().int().min(-1).default(-1),
   limit: z.coerce.number().int().min(1).max(2000).default(500),
+  /**
+   * Ne garder que les lignes d'au moins cette gravite.
+   *
+   * « A partir de l'avertissement » a un sens parce que les niveaux forment une
+   * echelle -- c'est la raison pour laquelle il n'y a pas de niveau `success`,
+   * qui ne serait ni au-dessus ni en dessous.
+   */
+  level: logLevelSchema.optional(),
+  /**
+   * Fragment cherche dans le message, insensible a la casse.
+   *
+   * Un fragment et non des mots : on cherche un identifiant, un selecteur CSS,
+   * un morceau de trace. Une recherche plein texte aurait racine-ise
+   * « ETIMEDOUT » et decoupe « #form > input[name] » en mots.
+   */
+  search: z.string().min(1).max(200).optional(),
 });
 export type ExecutionLogsQuery = z.infer<typeof executionLogsQuerySchema>;

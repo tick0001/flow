@@ -1,13 +1,18 @@
-import { mkdir, readdir, rmdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { randomUUID } from 'node:crypto';
 import type { ExecutionJob, ExecutionStatus } from '@flow/contracts';
 import { loadEnv, resolveFromRoot } from './config/env.js';
 import type { Depot, Denouement, ExecutionReclamee } from './depot.js';
 import { Journal } from './journal.js';
 import { journalDe } from './log.js';
 import type { Diffusion } from './diffusion.js';
+import type { BrowserContext } from 'playwright';
+import type { FileStore } from '@flow/storage';
 import type { Navigateurs } from './navigateur.js';
 import { Progression } from './progression.js';
+import { Recolte } from './pieces.js';
 import { Screencast } from './screencast.js';
 import { chargerBot } from './registre.js';
 
@@ -36,6 +41,14 @@ interface EnCours {
   /** La vue en direct, ouverte seulement si quelqu'un regarde. */
   screencast: Screencast | undefined;
   /**
+   * Recolte les pieces pendant que le navigateur vit encore.
+   *
+   * Portee ici parce qu'elle doit tourner **avant** la fermeture du contexte :
+   * une capture se prend sur une page ouverte, et une trace s'arrete sur un
+   * contexte vivant.
+   */
+  recolter: ((echec: boolean) => Promise<void>) | undefined;
+  /**
    * Dossier de sortie, range a la fin quoi qu'il arrive.
    *
    * Porte ici et non dans le deroulement, parce que c'est la seule facon de le
@@ -62,6 +75,7 @@ export class Executeur {
     private readonly depot: Depot,
     private readonly navigateurs: Navigateurs,
     private readonly diffusion: Diffusion,
+    private readonly stockage: FileStore,
   ) {}
 
   /** Les executions que ce worker detient. Interroge par le battement de coeur. */
@@ -105,6 +119,7 @@ export class Executeur {
       interruption: undefined,
       fermerContexte: undefined,
       screencast: undefined,
+      recolter: undefined,
       outputDir: undefined,
       minuteur: setTimeout(() => {
         this.interrompre(reclamee.id, 'delai');
@@ -121,27 +136,39 @@ export class Executeur {
       denouement = await this.derouler(reclamee, journal, progression, suivi, publier);
     } catch (erreur: unknown) {
       denouement = this.denouementDErreur(erreur, suivi, demarre, env.WORKER_RUN_TIMEOUT_SECONDS);
-    } finally {
-      clearTimeout(suivi.minuteur);
-      this.enCours.delete(reclamee.id);
+    }
 
-      // La vue en direct avant le contexte : fermer le contexte d'abord
-      // emporterait la session CDP, et l'arret se plaindrait dans le vide.
-      if (suivi.screencast) await suivi.screencast.arreter();
+    // Pas de `finally` ici, et c'est voulu : la suite a besoin du denouement, que
+    // TypeScript ne considere pose qu'une fois les deux branches passees. Ni
+    // l'une ni l'autre ne releve, si bien qu'on arrive toujours ici.
+    clearTimeout(suivi.minuteur);
+    this.enCours.delete(reclamee.id);
 
-      if (suivi.fermerContexte) {
-        try {
-          await suivi.fermerContexte();
-        } catch (erreur: unknown) {
-          // Un contexte deja ferme -- ce qui est le cas apres une interruption --
-          // ou un navigateur mort. Rien a rattraper : l'execution est finie.
-          log.debug(`${reclamee.id} : fermeture du contexte : ${String(erreur)}`);
-        }
+    // La vue en direct avant le reste : fermer le contexte d'abord emporterait la
+    // session CDP, et l'arret se plaindrait dans le vide.
+    if (suivi.screencast) await suivi.screencast.arreter();
+
+    // **La recolte avant la fermeture du contexte, et c'est l'ordre qui compte** :
+    // une capture se prend sur une page ouverte, une trace s'arrete sur un
+    // contexte vivant. Apres, il n'y a plus rien a photographier.
+    if (suivi.recolter) {
+      try {
+        await suivi.recolter(denouement.status !== 'succeeded');
+      } catch (erreur: unknown) {
+        // Une piece perdue ne prive pas l'execution de son denouement.
+        log.warn(`${reclamee.id} : recolte incomplete : ${String(erreur)}`);
       }
     }
 
-    // Le rangement avant la fermeture du journal : il peut y ecrire une ligne.
-    if (suivi.outputDir) await this.rangerDossier(suivi.outputDir, journal);
+    if (suivi.fermerContexte) {
+      try {
+        await suivi.fermerContexte();
+      } catch (erreur: unknown) {
+        // Un contexte deja ferme -- ce qui est le cas apres une interruption --
+        // ou un navigateur mort. Rien a rattraper : l'execution est finie.
+        log.debug(`${reclamee.id} : fermeture du contexte : ${String(erreur)}`);
+      }
+    }
 
     // Le journal et la progression avant le denouement : quand l'interface voit
     // un etat terminal, elle arrete de relire, et une ligne ecrite apres ne
@@ -278,6 +305,18 @@ export class Executeur {
 
     suivi.fermerContexte = () => context.close();
 
+    // La trace demarre avant le bot : ce qu'elle n'a pas enregistre n'existe pas.
+    // `sources: false` : la trace embarquerait sinon le code du bot, qui
+    // appartient a son auteur et n'a rien a faire dans le stockage de
+    // l'installation.
+    if (env.WORKER_TRACE) {
+      try {
+        await context.tracing.start({ screenshots: true, snapshots: true, sources: false });
+      } catch (erreur: unknown) {
+        journal.ecrire('warning', `Trace indisponible : ${String(erreur)}`);
+      }
+    }
+
     // Si l'interruption est arrivee pendant l'ouverture du navigateur, le
     // contexte vient de naitre apres l'abandon : personne ne l'aurait ferme.
     if (suivi.abandon.signal.aborted) await context.close();
@@ -304,6 +343,45 @@ export class Executeur {
     const outputDir = await this.preparerDossier(reclamee.id);
 
     suivi.outputDir = outputDir;
+
+    const recolte = new Recolte(this.depot, this.stockage, reclamee.context, reclamee.id);
+
+    suivi.recolter = async (echec: boolean): Promise<void> => {
+      // **La capture n'est prise qu'en cas d'echec.** Une capture par execution
+      // reussie remplirait le stockage de pages qui se sont bien passees, et
+      // c'est l'echec qu'on vient regarder.
+      if (echec) {
+        try {
+          const image = await page.screenshot({ fullPage: true });
+
+          if (await recolte.deposer('screenshot', 'echec.png', 'image/png', image)) {
+            journal.ecrire('info', "Capture de l'ecran au moment de l'echec.");
+          }
+        } catch (erreur: unknown) {
+          // Le cas courant : la page est deja fermee. Une interruption ferme le
+          // contexte navigateur pour arreter le bot -- c'est ce qui l'arrete
+          // vraiment -- et il n'y a alors plus rien a photographier.
+          journal.ecrire('debug', `Pas de capture : ${String(erreur)}`);
+        }
+      }
+
+      await this.recolterLaTrace(context, recolte, journal, echec);
+
+      const verses = await recolte.verserLeDossier(outputDir);
+
+      if (verses > 0) {
+        journal.ecrire(
+          'info',
+          `${String(verses)} fichier(s) verse(s) depuis le dossier de sortie.`,
+        );
+      }
+
+      // Le dossier de travail disparait dans tous les cas : ce qui compte est
+      // desormais dans le stockage, et le garder ferait grossir sans fin le
+      // disque du worker.
+      await rm(outputDir, { recursive: true, force: true });
+      suivi.outputDir = undefined;
+    };
 
     const resultat = await bot.run({
       params: lecture.data,
@@ -399,30 +477,47 @@ export class Executeur {
   }
 
   /**
-   * Retire le dossier de sortie s'il est vide, le signale sinon.
+   * Arrete la trace et la garde si elle sert.
    *
-   * La plupart des bots n'y ecrivent rien : garder un dossier vide par execution
-   * remplirait le disque d'entrees inutiles, que personne ne penserait a nettoyer.
-   * Un dossier qui contient quelque chose reste -- le versement au stockage de
-   * fichiers arrive au jalon J5, et effacer en attendant perdrait une capture que
-   * le bot a pris la peine de produire.
+   * **Gardee seulement en cas d'echec.** Une trace de run reussi ne sert a
+   * personne et pese des mega-octets : en conserver une par execution remplirait
+   * le stockage de rejeux que personne n'ouvrira jamais.
+   *
+   * Elle est ecrite dans un fichier temporaire avant d'etre versee, parce que
+   * Playwright ne sait l'ecrire que sur un chemin. Le fichier est retire ensuite,
+   * y compris quand le versement echoue -- sinon un echec de stockage laisserait
+   * grossir le dossier temporaire de la machine sans que rien ne le dise.
    */
-  private async rangerDossier(chemin: string, journal: Journal): Promise<void> {
+  private async recolterLaTrace(
+    context: BrowserContext,
+    recolte: Recolte,
+    journal: Journal,
+    echec: boolean,
+  ): Promise<void> {
+    if (!loadEnv().WORKER_TRACE) return;
+
+    if (!echec) {
+      // Arretee sans chemin : Playwright jette ce qu'elle a enregistre.
+      await context.tracing.stop().catch(() => undefined);
+
+      return;
+    }
+
+    const chemin = join(tmpdir(), `flow-trace-${randomUUID()}.zip`);
+
     try {
-      const contenu = await readdir(chemin);
+      await context.tracing.stop({ path: chemin });
 
-      if (contenu.length === 0) {
-        await rmdir(chemin);
-
-        return;
+      if (await recolte.deposerFichier('trace', chemin, 'trace.zip')) {
+        journal.ecrire(
+          'info',
+          "Trace Playwright enregistree : elle rejoue l'execution action par action.",
+        );
       }
-
-      journal.ecrire(
-        'info',
-        `${String(contenu.length)} fichier(s) dans le dossier de sortie (${chemin}).`,
-      );
     } catch (erreur: unknown) {
-      log.debug(`Rangement du dossier de sortie : ${String(erreur)}`);
+      journal.ecrire('debug', `Trace non conservee : ${String(erreur)}`);
+    } finally {
+      await rm(chemin, { force: true });
     }
   }
 }

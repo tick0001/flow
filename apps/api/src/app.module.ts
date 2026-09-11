@@ -7,10 +7,12 @@ import { EntitiesModule } from './entities/entities.module.js';
 import { ExecutionsModule } from './executions/executions.module.js';
 import { HealthModule } from './health/health.module.js';
 import { QueueModule } from './queue/queue.module.js';
+import { StorageModule } from './storage/storage.module.js';
 
 @Module({
   imports: [
     DatabaseModule,
+    StorageModule,
     AuthModule,
     QueueModule,
     HealthModule,

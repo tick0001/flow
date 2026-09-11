@@ -39,3 +39,12 @@ export const executionStatusEnum = pgEnum('execution_status', [
  * l'execution.
  */
 export const logLevelEnum = pgEnum('log_level', ['debug', 'info', 'warning', 'error']);
+
+/**
+ * Nature d'une piece produite par une execution.
+ *
+ * Trois valeurs, et la distinction sert a l'affichage comme a la retention : une
+ * capture s'affiche, une trace se telecharge et s'ouvre dans l'outil de
+ * Playwright, un fichier de sortie appartient au bot et le coeur n'en sait rien.
+ */
+export const artifactKindEnum = pgEnum('artifact_kind', ['screenshot', 'trace', 'output']);

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   isTerminal,
+  type ExecutionArtifact,
   type ExecutionDetail,
   type ExecutionLog,
   type ExecutionLogsQuery,
@@ -21,9 +22,12 @@ import {
   desc,
   entities,
   eq,
+  executionArtifacts,
   executionLogs,
   executions,
   gt,
+  gte,
+  lte,
   sql,
   users,
   type SQL,
@@ -74,6 +78,32 @@ const PROJECTION = {
   parameters: executions.parameters,
   output: executions.output,
 };
+
+/**
+ * Les gravites egales ou superieures a chacune, ecrites une fois.
+ *
+ * Un tableau litteral plutot qu'une comparaison sur l'enumere : PostgreSQL sait
+ * ordonner un type enumere, mais l'ordre depend alors de l'ordre de declaration
+ * du type -- une information qui vit dans une migration, loin d'ici, et qu'un
+ * `ALTER TYPE ... ADD VALUE` peut changer sans que personne ne relise ce fichier.
+ */
+export const GRAVITES_A_PARTIR_DE: Record<string, string> = {
+  debug: '{debug,info,warning,error}',
+  info: '{info,warning,error}',
+  warning: '{warning,error}',
+  error: '{error}',
+};
+
+/**
+ * Echappe ce qui a un sens dans un motif `LIKE`.
+ *
+ * Sans cela, chercher « 100% » dans les journaux rendrait toutes les lignes : le
+ * pourcentage y signifie « n'importe quoi ». Le contresens est silencieux, ce qui
+ * est le pire genre.
+ */
+export function echapperLike(motif: string): string {
+  return motif.replace(/[\\%_]/g, (caractere) => `\\${caractere}`);
+}
 
 /**
  * Encodage du curseur de pagination.
@@ -207,6 +237,8 @@ export class ExecutionsService {
     if (requete.botId) conditions.push(eq(executions.botId, requete.botId));
     if (requete.status) conditions.push(eq(executions.status, requete.status));
     if (requete.mine) conditions.push(eq(executions.requestedBy, context.userId));
+    if (requete.depuis) conditions.push(gte(executions.createdAt, requete.depuis));
+    if (requete.jusqua) conditions.push(lte(executions.createdAt, requete.jusqua));
 
     if (requete.cursor) {
       const curseur = decoderCurseur(requete.cursor);
@@ -245,7 +277,66 @@ export class ExecutionsService {
       output: ligne.output,
       worker: ligne.workerId,
       cancelRequested: ligne.cancelRequestedAt !== null && !isTerminal(ligne.status),
+      artifacts: await this.pieces(id),
     };
+  }
+
+  /**
+   * Les pieces d'une execution : capture, trace, fichiers deposes.
+   *
+   * La clef de stockage n'est **pas** rendue. Le client demande une piece par son
+   * identifiant, sur une route qui verifie le cloisonnement : publier le chemin
+   * l'aurait rendu devinable et aurait contourne tout le reste.
+   */
+  async pieces(executionId: string): Promise<ExecutionArtifact[]> {
+    return this.db.asUser((tx) =>
+      tx
+        .select({
+          id: executionArtifacts.id,
+          kind: executionArtifacts.kind,
+          name: executionArtifacts.name,
+          contentType: executionArtifacts.contentType,
+          sizeBytes: executionArtifacts.sizeBytes,
+          createdAt: executionArtifacts.createdAt,
+        })
+        .from(executionArtifacts)
+        .where(eq(executionArtifacts.executionId, executionId))
+        .orderBy(asc(executionArtifacts.createdAt)),
+    );
+  }
+
+  /**
+   * Une piece et sa clef, pour la servir.
+   *
+   * La lecture passe par le role applicatif : la politique de la table exige que
+   * l'execution soit dans le perimetre. Une piece invisible est donc introuvable,
+   * et le 404 ne distingue pas les deux -- le distinguer confirmerait l'existence
+   * d'une capture appartenant a une autre organisation.
+   */
+  async pieceAServir(
+    executionId: string,
+    artifactId: string,
+  ): Promise<{ name: string; contentType: string; sizeBytes: number; storageKey: string }> {
+    const [piece] = await this.db.asUser((tx) =>
+      tx
+        .select({
+          name: executionArtifacts.name,
+          contentType: executionArtifacts.contentType,
+          sizeBytes: executionArtifacts.sizeBytes,
+          storageKey: executionArtifacts.storageKey,
+        })
+        .from(executionArtifacts)
+        .where(
+          and(
+            eq(executionArtifacts.id, artifactId),
+            eq(executionArtifacts.executionId, executionId),
+          ),
+        ),
+    );
+
+    if (!piece) throw new NotFoundException("Cette piece n'existe pas.");
+
+    return piece;
   }
 
   /**
@@ -259,6 +350,29 @@ export class ExecutionsService {
   async logs(id: string, requete: ExecutionLogsQuery): Promise<ExecutionLog[]> {
     await this.lire(id);
 
+    const conditions: SQL[] = [
+      eq(executionLogs.executionId, id),
+      gt(executionLogs.seq, requete.afterSeq),
+    ];
+
+    if (requete.level) {
+      // Les niveaux forment une echelle : « a partir de l'avertissement » a donc
+      // un sens, et se traduit par une comparaison sur leur rang. C'est
+      // exactement la raison pour laquelle il n'y a pas de niveau `success`.
+      conditions.push(
+        sql`${executionLogs.level} = ANY (${GRAVITES_A_PARTIR_DE[requete.level]}::log_level[])`,
+      );
+    }
+
+    if (requete.search) {
+      // `lower(...) LIKE lower(...)` et non `ILIKE` : l'index trigramme pose sur
+      // la forme en minuscules ne sert que cette ecriture-la. Avec `ILIKE`,
+      // PostgreSQL balaierait la plus grosse table du schema.
+      conditions.push(
+        sql`lower(${executionLogs.message}) LIKE lower(${`%${echapperLike(requete.search)}%`})`,
+      );
+    }
+
     const lignes = await this.db.asUser((tx) =>
       tx
         .select({
@@ -268,7 +382,7 @@ export class ExecutionsService {
           message: executionLogs.message,
         })
         .from(executionLogs)
-        .where(and(eq(executionLogs.executionId, id), gt(executionLogs.seq, requete.afterSeq)))
+        .where(and(...conditions))
         .orderBy(asc(executionLogs.seq))
         .limit(requete.limit),
     );

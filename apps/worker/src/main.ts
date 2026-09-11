@@ -7,7 +7,8 @@ import {
   cancelOrderSchema,
   executionJobSchema,
 } from '@flow/contracts';
-import { loadEnv, loadEnvFiles } from './config/env.js';
+import { ouvrirStockageDisque } from '@flow/storage';
+import { loadEnv, loadEnvFiles, resolveFromRoot } from './config/env.js';
 import { Depot } from './depot.js';
 import { Diffusion } from './diffusion.js';
 import { Executeur } from './executeur.js';
@@ -41,10 +42,12 @@ async function bootstrap(): Promise<void> {
   const depot = new Depot(env.WORKER_ID);
   const navigateurs = new Navigateurs();
   const diffusion = new Diffusion();
+  const stockage = await ouvrirStockageDisque(resolveFromRoot(env.STORAGE_PATH));
 
   await diffusion.demarrer();
+  log.log(`Pieces versees dans ${resolveFromRoot(env.STORAGE_PATH)}.`);
 
-  const executeur = new Executeur(depot, navigateurs, diffusion);
+  const executeur = new Executeur(depot, navigateurs, diffusion, stockage);
 
   // `maxRetriesPerRequest: null` est exige par BullMQ pour la connexion d'un
   // worker : il attend un travail par une commande bloquante, que ioredis

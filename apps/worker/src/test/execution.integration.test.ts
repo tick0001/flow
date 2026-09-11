@@ -9,6 +9,7 @@ import { Depot } from '../depot.js';
 import { Diffusion } from '../diffusion.js';
 import { Executeur } from '../executeur.js';
 import { Navigateurs } from '../navigateur.js';
+import { DiskFileStore } from '@flow/storage';
 import { createFixture, SCHEMA_URL, type Fixture } from './fixtures.js';
 
 /**
@@ -91,15 +92,35 @@ export default defineBot({
 });
 `;
 
+/** Un bot qui ouvre une page puis leve : le cas qu'on vient diagnostiquer. */
+const BOT_QUI_ECHOUE = `
+import { defineBot, z } from '@flow/bot-sdk';
+
+export default defineBot({
+  id: 'essai.echoue',
+  name: 'echoue',
+  version: '1.0.0',
+  parameters: z.object({ url: z.url() }),
+  async run({ params, page, log }) {
+    await page.goto(params.url);
+    log('error', 'Ce qui devait arriver arriva.');
+
+    throw new Error('Le selecteur attendu est introuvable.');
+  },
+});
+`;
+
 describe("Cycle de vie d'une execution", () => {
   let fixture: Fixture;
   let depot: Depot;
   let navigateurs: Navigateurs;
   let diffusion: Diffusion;
+  let stockage: DiskFileStore;
   let executeur: Executeur;
   let botReussi: string;
   let botSuspendu: string;
   let botQuiDepose: string;
+  let botQuiEchoue: string;
 
   beforeAll(async () => {
     fixture = await createFixture('TEST-EXEC-W');
@@ -112,12 +133,14 @@ describe("Cycle de vie d'une execution", () => {
       type: 'object',
       properties: {},
     });
+    botQuiEchoue = await fixture.deposerBot('echoue', BOT_QUI_ECHOUE, SCHEMA_URL);
 
     depot = new Depot(loadEnv().WORKER_ID);
     navigateurs = new Navigateurs();
     diffusion = new Diffusion();
     await diffusion.demarrer();
-    executeur = new Executeur(depot, navigateurs, diffusion);
+    stockage = new DiskFileStore(fixture.dossierDuStockage);
+    executeur = new Executeur(depot, navigateurs, diffusion, stockage);
   }, 120_000);
 
   afterAll(async () => {
@@ -352,22 +375,59 @@ describe("Cycle de vie d'une execution", () => {
     expect((await fixture.relire(id)).status).toBe('cancelled');
   }, 120_000);
 
-  it('garde le dossier de sortie quand le bot y a depose quelque chose', async () => {
-    // L'autre moitie de la regle : un dossier vide disparait, un dossier qui
-    // porte une capture reste. L'effacer perdrait ce que le bot a pris la peine
-    // de produire -- et c'est souvent la seule preuve de ce qu'il a vu.
+  it('verse au stockage ce que le bot a depose, et vide le dossier de travail', async () => {
+    // Le dossier de sortie est un espace de **passage**. Ce que le bot y ecrit
+    // part au stockage de fichiers, ou l'API sait le servir ; le laisser sur le
+    // disque du worker le rendrait invisible depuis l'interface, et ferait
+    // grossir la machine sans que personne ne le decide.
     const id = await fixture.mettreEnAttente(botQuiDepose);
 
     await executeur.executer({ executionId: id, botId: botQuiDepose });
 
     expect((await fixture.relire(id)).status).toBe('succeeded');
-    expect(existsSync(join(fixture.dossierDeSortie(id), 'capture.txt'))).toBe(true);
 
-    // Et le chemin est dit dans le journal : personne ne devinerait ou regarder.
-    const journal = await fixture.journalDe(id);
+    const pieces = await fixture.piecesDe(id);
+    const depose = pieces.find((piece) => piece.name === 'capture.txt');
 
-    expect(journal.some((ligne) => ligne.message.includes('dossier de sortie'))).toBe(true);
+    expect(depose).toBeDefined();
+    expect(depose?.kind).toBe('output');
+    expect(depose?.sizeBytes).toBeGreaterThan(0);
+
+    // Le contenu est bien la, sous la clef que la ligne annonce.
+    expect(existsSync(join(fixture.dossierDuStockage, depose?.storageKey ?? 'absente'))).toBe(true);
+
+    // Et le dossier de travail a disparu.
+    expect(existsSync(fixture.dossierDeSortie(id))).toBe(false);
   });
+
+  it("garde une trace et une capture quand l'execution echoue, et rien quand elle reussit", async () => {
+    // Le critere de sortie du jalon : un echec se diagnostique sans ouvrir un
+    // terminal. La capture dit ce que le navigateur avait a l'ecran, la trace
+    // rejoue le run action par action.
+    //
+    // Et l'inverse compte autant : une trace par execution reussie remplirait le
+    // stockage de rejeux que personne n'ouvrira jamais.
+    const rate = await fixture.mettreEnAttente(botQuiEchoue, {
+      url: 'data:text/html,<title>Rate</title>',
+    });
+
+    await executeur.executer({ executionId: rate, botId: botQuiEchoue });
+
+    const apresEchec = await fixture.piecesDe(rate);
+
+    expect((await fixture.relire(rate)).status).toBe('failed');
+    expect(apresEchec.map((piece) => piece.kind).sort()).toEqual(['screenshot', 'trace']);
+    expect(apresEchec.every((piece) => piece.sizeBytes > 0)).toBe(true);
+
+    const reussi = await fixture.mettreEnAttente(botReussi, {
+      url: 'data:text/html,<title>Bien</title>',
+    });
+
+    await executeur.executer({ executionId: reussi, botId: botReussi });
+
+    expect((await fixture.relire(reussi)).status).toBe('succeeded');
+    expect(await fixture.piecesDe(reussi)).toEqual([]);
+  }, 120_000);
 
   it("marque abandonnee une execution que l'arret du worker emporte", async () => {
     // `abandoned` et non `cancelled` : personne ne l'a demandee. Les confondre

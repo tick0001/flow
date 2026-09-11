@@ -3,15 +3,20 @@ import {
   Controller,
   Get,
   Headers,
+  Inject,
   Param,
   ParseUUIDPipe,
   Post,
   Query,
+  Res,
   Sse,
   UseGuards,
   type MessageEvent,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import type { Observable } from 'rxjs';
+import type { FileStore } from '@flow/storage';
+import { FILE_STORE } from '../storage/storage.module.js';
 import {
   executionLogsQuerySchema,
   executionsQuerySchema,
@@ -33,6 +38,7 @@ export class ExecutionsController {
   constructor(
     private readonly executions: ExecutionsService,
     private readonly flux: ExecutionStreamService,
+    @Inject(FILE_STORE) private readonly stockage: FileStore,
   ) {}
 
   /**
@@ -114,6 +120,48 @@ export class ExecutionsController {
     const rang = Math.max(rangLisible(depuis), rangLisible(dernierRang));
 
     return this.flux.ouvrir(id, rang);
+  }
+
+  /**
+   * Sert une piece : capture, trace, fichier depose.
+   *
+   * **Servie par l'API et jamais par un chemin statique.** Un dossier expose
+   * derriere le serveur de fichiers aurait donne des adresses devinables, et
+   * aurait contourne le cloisonnement que tout le reste applique -- une capture
+   * d'ecran de page authentifiee est precisement ce qu'on veut le moins voir
+   * fuiter.
+   *
+   * La ligne est relue sous le role applicatif : une piece dont l'execution est
+   * hors perimetre est introuvable, et le refus ne distingue pas « invisible »
+   * de « inexistante ».
+   */
+  @Get(':id/artifacts/:artifactId')
+  @RequireRight('execution', 'read')
+  async artifact(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('artifactId', ParseUUIDPipe) artifactId: string,
+    @Res() reponse: Response,
+  ): Promise<void> {
+    const piece = await this.executions.pieceAServir(id, artifactId);
+    const flux = await this.stockage.lire(piece.storageKey);
+
+    reponse.setHeader('Content-Type', piece.contentType);
+    reponse.setHeader('Content-Length', String(piece.sizeBytes));
+    // `inline` pour une image, qu'on veut voir dans la page ; `attachment` pour
+    // le reste, qu'on ouvre ailleurs -- une trace Playwright s'ouvre dans son
+    // propre outil, et l'afficher comme du texte ne servirait personne.
+    const disposition = piece.contentType.startsWith('image/') ? 'inline' : 'attachment';
+
+    reponse.setHeader(
+      'Content-Disposition',
+      `${disposition}; filename="${piece.name.replace(/"/g, '')}"`,
+    );
+    // Une piece ne change jamais : son identifiant est unique et son contenu est
+    // fige a l'ecriture. Un cache prive d'un an evite de relire le disque a
+    // chaque coup d'oeil sur une capture.
+    reponse.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
+
+    flux.pipe(reponse);
   }
 
   /**

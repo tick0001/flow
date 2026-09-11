@@ -40,6 +40,12 @@ export interface Fixture {
   relire: (executionId: string) => Promise<LigneRelue>;
   /** Dossier de sortie d'une execution, tel que le SDK le promet au bot. */
   dossierDeSortie: (executionId: string) => string;
+  /** Racine du stockage de fichiers de cette fixture. */
+  dossierDuStockage: string;
+  /** Les pieces enregistrees pour une execution. */
+  piecesDe: (
+    executionId: string,
+  ) => Promise<{ kind: string; name: string; sizeBytes: number; storageKey: string }[]>;
   journalDe: (executionId: string) => Promise<{ seq: number; level: string; message: string }[]>;
   cleanup: () => Promise<void>;
 }
@@ -76,6 +82,7 @@ export async function createFixture(prefix: string): Promise<Fixture> {
   // que ce soit ne demarre evite un cache fige sur les valeurs du `.env`.
   process.env['BOTS_PATH'] = racine;
   process.env['WORKER_OUTPUT_PATH'] = join(racine, 'sorties');
+  process.env['STORAGE_PATH'] = join(racine, 'stockage');
   resetEnvCache();
   resetRegistre();
 
@@ -163,6 +170,24 @@ export async function createFixture(prefix: string): Promise<Fixture> {
     return ligne;
   };
 
+  const piecesDe = async (
+    executionId: string,
+  ): Promise<{ kind: string; name: string; sizeBytes: number; storageKey: string }[]> => {
+    const resultat = await owner.db.execute<{
+      kind: string;
+      name: string;
+      sizeBytes: number;
+      storageKey: string;
+    }>(sql`
+      SELECT kind::text AS kind, name, size_bytes AS "sizeBytes", storage_key AS "storageKey"
+        FROM execution_artifacts
+       WHERE execution_id = ${executionId}::uuid
+       ORDER BY created_at
+    `);
+
+    return resultat.rows;
+  };
+
   const journalDe = async (
     executionId: string,
   ): Promise<{ seq: number; level: string; message: string }[]> => {
@@ -186,6 +211,7 @@ export async function createFixture(prefix: string): Promise<Fixture> {
 
     delete process.env['BOTS_PATH'];
     delete process.env['WORKER_OUTPUT_PATH'];
+    delete process.env['STORAGE_PATH'];
     resetEnvCache();
     resetRegistre();
   };
@@ -201,6 +227,8 @@ export async function createFixture(prefix: string): Promise<Fixture> {
     mettreEnAttente,
     relire,
     dossierDeSortie: (executionId: string) => join(racine, 'sorties', executionId),
+    dossierDuStockage: join(racine, 'stockage'),
+    piecesDe,
     journalDe,
     cleanup,
   };

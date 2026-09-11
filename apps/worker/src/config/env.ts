@@ -101,14 +101,36 @@ const envSchema = z.object({
     .default(1800),
 
   /**
-   * Ou les bots deposent ce qui doit survivre : captures, exports.
+   * Dossier de travail ou les bots deposent ce qui doit survivre.
    *
-   * Un sous-dossier par execution. Le versement au stockage de fichiers arrive
-   * au jalon J5 ; en attendant, un dossier reste sur la machine du worker s'il
-   * contient quelque chose, et disparait s'il est vide -- ce qui est le cas de la
-   * plupart des runs.
+   * Un sous-dossier par execution, verse au stockage de fichiers a la fin puis
+   * retire. C'est un espace de passage, pas un archivage : ce qui compte est
+   * dans le stockage.
    */
-  WORKER_OUTPUT_PATH: z.string().min(1).default('./donnees/executions'),
+  WORKER_OUTPUT_PATH: z.string().min(1).default('./donnees/travail'),
+
+  /**
+   * Racine du stockage de fichiers.
+   *
+   * **L'API doit voir le meme dossier** pour servir les pieces : sur une seule
+   * machine cela va de soi, sur plusieurs il faut un volume partage -- ou une
+   * implementation S3, que l'interface du stockage attend sans rien changer
+   * autour.
+   */
+  STORAGE_PATH: z.string().min(1).default('./donnees/stockage'),
+
+  /**
+   * Enregistrer une trace Playwright de chaque execution.
+   *
+   * La trace est de loin la piece la plus utile pour comprendre un echec : elle
+   * rejoue le run action par action, avec les captures et le DOM de chaque etape.
+   * Elle **n'est gardee qu'en cas d'echec** -- une trace de run reussi ne sert a
+   * personne et pese des mega-octets.
+   *
+   * Le cout est reel et permanent : enregistrer ralentit chaque execution, y
+   * compris celles qui reussiront. C'est pour cela que le reglage existe.
+   */
+  WORKER_TRACE: envBoolean.default(true),
 
   LOG_LEVEL: z.enum(['error', 'warn', 'log', 'debug', 'verbose']).default('log'),
 });

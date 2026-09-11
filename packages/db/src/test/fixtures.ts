@@ -4,6 +4,7 @@ import {
   entities,
   entitySettings,
   eq,
+  executionArtifacts,
   executionLogs,
   executions,
   inArray,
@@ -188,6 +189,15 @@ export async function seedExecution(
     seq: 0,
     level: 'info',
     message: `Journal de ${entityKey}`,
+  });
+
+  await fixture.owner.db.insert(executionArtifacts).values({
+    executionId: ligne.id,
+    kind: 'screenshot',
+    name: 'echec.png',
+    contentType: 'image/png',
+    sizeBytes: 1024,
+    storageKey: `executions/xx/yy/${ligne.id}/piece-echec.png`,
   });
 
   return ligne.id;

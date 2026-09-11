@@ -8,6 +8,7 @@ import { BATTEMENT_MS, BATTEMENT_PERDU_MS } from '@flow/contracts';
 import { sql } from '@flow/db';
 import { DatabaseService } from '../database/database.service.js';
 import { QueueService } from '../queue/queue.service.js';
+import { ExecutionPurgeService } from './purge.service.js';
 import { ExecutionRelayService } from './relais.service.js';
 
 /**
@@ -32,6 +33,16 @@ const PAR_PASSE = 100;
  * mais en remplissant les journaux d'un faux probleme.
  */
 const GRACE_MS = 10_000;
+
+/**
+ * Une passe de purge toutes les tant de passes d'entretien.
+ *
+ * L'entretien tourne toutes les quinze secondes parce qu'une execution orpheline
+ * doit se voir vite. La purge, elle, porte sur des jours : la lancer au meme
+ * rythme ferait quatre requetes par minute pour ne trouver, presque toujours,
+ * rien a faire. Une fois par heure suffit, et deborde largement.
+ */
+const PURGE_TOUS_LES = 240;
 
 /**
  * L'entretien des executions : ce qui rattrape ce qui s'est mal passe ailleurs.
@@ -60,11 +71,13 @@ export class ExecutionMaintenanceService implements OnApplicationBootstrap, OnMo
   private readonly logger = new Logger(ExecutionMaintenanceService.name);
   private minuteur: NodeJS.Timeout | undefined;
   private enCours = false;
+  private passes = 0;
 
   constructor(
     private readonly db: DatabaseService,
     private readonly file: QueueService,
     private readonly relais: ExecutionRelayService,
+    private readonly purge: ExecutionPurgeService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -97,6 +110,12 @@ export class ExecutionMaintenanceService implements OnApplicationBootstrap, OnMo
     try {
       const abandonnees = await this.abandonnerLesOrphelines();
       const remisesEnFile = await this.reconcilierLaFile();
+
+      // La premiere passe purge aussi : un demarrage apres une longue coupure
+      // est exactement le moment ou il y a du retard a rattraper.
+      if (this.passes % PURGE_TOUS_LES === 0) await this.purge.passe();
+
+      this.passes += 1;
 
       if (abandonnees > 0 || remisesEnFile > 0) {
         this.logger.warn(
