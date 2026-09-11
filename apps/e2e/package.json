@@ -1,0 +1,23 @@
+{
+  "name": "@flow/e2e",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "parcours": "playwright test",
+    "parcours:ui": "playwright test --ui",
+    "lint": "eslint fixtures parcours",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"Les parcours se lancent par pnpm parcours : ils exigent la pile complete.\""
+  },
+  "dependencies": {
+    "@flow/db": "workspace:*",
+    "@node-rs/argon2": "^2.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "typescript": "^6.0.3",
+    "@types/node": "^26.4.1"
+  }
+}

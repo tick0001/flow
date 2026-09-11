@@ -14,6 +14,7 @@ export const fr = {
     modifier: 'Modifier',
     supprimer: 'Supprimer',
     rechercher: 'Rechercher',
+    choisir: 'Choisir…',
     reessayer: 'Réessayer',
     erreurInattendue: 'Une erreur inattendue est survenue.',
   },
@@ -71,6 +72,7 @@ export const fr = {
     planifications: 'Planifications',
     statistiques: 'Pilotage',
     plugins: 'Extensions',
+    annuaire: 'Annuaire',
     reglages: 'Réglages',
     retour: 'Retour',
     ouvrirMenu: 'Ouvrir le menu',
@@ -187,6 +189,24 @@ export const fr = {
     parBot: 'Par bot',
     dernierEchec: 'Dernier échec',
   },
+  annuaire: {
+    titre: 'Annuaire',
+    intro:
+      'Ce qu’un groupe d’annuaire donne : un profil, sur une entité. L’annuaire dit qui est dans le groupe ; ces règles disent ce que cela vaut.',
+    sansRegle:
+      'Un compte d’annuaire dont aucun groupe ne correspond à une règle se connecte sans rien obtenir, et le refus dit « aucune habilitation ». C’est presque toujours la cause.',
+    nouvelle: 'Nouvelle règle',
+    aucune: 'Aucune règle.',
+    aucuneAide: 'Sans règle, aucun compte d’annuaire n’obtient quoi que ce soit.',
+    groupe: 'Groupe',
+    groupeAide: 'Le nom du groupe, sans le reste du DN. La casse n’a pas d’importance.',
+    profil: 'Profil',
+    entite: 'Entité',
+    portee: 'Portée',
+    porteeAide: 'L’habilitation porte-t-elle aussi sur les sous-entités ?',
+    porteeEntite: 'Cette entité',
+    porteeRecursive: 'Et sous-entités',
+  },
   plugins: {
     titre: 'Extensions',
     intro:
@@ -286,6 +306,7 @@ export const fr = {
       apikey: 'Clés d’API',
       stats: 'Pilotage',
       plugin: 'Extensions',
+      directory: 'Annuaire',
     },
     portees: {
       aucune: 'Aucun',
@@ -338,6 +359,10 @@ export const fr = {
     plugin: {
       read: 'Voir les extensions',
       manage: 'Installer et désinstaller des extensions',
+    },
+    directory: {
+      read: 'Voir les règles d’annuaire',
+      manage: 'Poser et retirer des règles d’annuaire',
     },
   },
   executions: {

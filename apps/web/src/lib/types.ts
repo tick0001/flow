@@ -7,6 +7,7 @@ import type {
   ExecutionSummary as ExecutionSummaryServeur,
   IssuedApiKey as IssuedApiKeyServeur,
   JourStats as JourStatsServeur,
+  DirectoryRule as DirectoryRuleServeur,
   Pilotage as PilotageServeur,
   PluginAsset as PluginAssetServeur,
   PluginSummary as PluginSummaryServeur,
@@ -75,6 +76,7 @@ export type IssuedApiKey = Transporte<IssuedApiKeyServeur>;
 export type CronPreview = Transporte<CronPreviewServeur>;
 export type JourStats = Transporte<JourStatsServeur>;
 export type Pilotage = Transporte<PilotageServeur>;
+export type DirectoryRule = Transporte<DirectoryRuleServeur>;
 export type PluginSummary = Transporte<PluginSummaryServeur>;
 export type PluginAsset = Transporte<PluginAssetServeur>;
 export type Schedule = Transporte<ScheduleServeur>;

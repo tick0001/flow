@@ -15,6 +15,7 @@ export const en: Traductions = {
     modifier: 'Edit',
     supprimer: 'Delete',
     rechercher: 'Search',
+    choisir: 'Choose…',
     reessayer: 'Try again',
     erreurInattendue: 'Something went wrong.',
   },
@@ -72,6 +73,7 @@ export const en: Traductions = {
     planifications: 'Schedules',
     statistiques: 'Insights',
     plugins: 'Extensions',
+    annuaire: 'Directory',
     reglages: 'Settings',
     retour: 'Back',
     ouvrirMenu: 'Open menu',
@@ -188,6 +190,24 @@ export const en: Traductions = {
     parBot: 'By bot',
     dernierEchec: 'Last failure',
   },
+  annuaire: {
+    titre: 'Directory',
+    intro:
+      'What a directory group grants: a profile, on an entity. The directory says who is in the group; these rules say what it is worth.',
+    sansRegle:
+      'A directory account whose groups match no rule signs in and gets nothing, and the refusal reads “no authorisation”. That is almost always the cause.',
+    nouvelle: 'New rule',
+    aucune: 'No rules.',
+    aucuneAide: 'Without a rule, no directory account gets anything.',
+    groupe: 'Group',
+    groupeAide: 'The group name, without the rest of the DN. Case does not matter.',
+    profil: 'Profile',
+    entite: 'Entity',
+    portee: 'Scope',
+    porteeAide: 'Does the authorisation also cover sub-entities?',
+    porteeEntite: 'This entity',
+    porteeRecursive: 'And sub-entities',
+  },
   plugins: {
     titre: 'Extensions',
     intro:
@@ -285,6 +305,7 @@ export const en: Traductions = {
       apikey: 'API keys',
       stats: 'Insights',
       plugin: 'Extensions',
+      directory: 'Directory',
     },
     portees: {
       aucune: 'None',
@@ -337,6 +358,10 @@ export const en: Traductions = {
     plugin: {
       read: 'View extensions',
       manage: 'Install and uninstall extensions',
+    },
+    directory: {
+      read: 'View directory rules',
+      manage: 'Add and remove directory rules',
     },
   },
   executions: {
