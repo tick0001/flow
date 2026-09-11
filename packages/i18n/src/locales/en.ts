@@ -70,7 +70,7 @@ export const en: Traductions = {
     bots: 'Bots',
     executions: 'Executions',
     planifications: 'Schedules',
-    statistiques: 'Statistics',
+    statistiques: 'Insights',
     reglages: 'Settings',
     retour: 'Back',
     ouvrirMenu: 'Open menu',
@@ -161,6 +161,32 @@ export const en: Traductions = {
     confirmerSuppression: 'Delete this profile?',
     aucun: 'No profiles.',
   },
+  pilotage: {
+    titre: 'Insights',
+    intro:
+      'What breaks most often, and since when. The figures above tell you whether to ask; the table of causes answers it.',
+    jours: '{{count}} days',
+    exporter: 'Export as CSV',
+    aucune: 'Nothing to report for this period.',
+    aucuneAide: 'Run some bots, or widen the period.',
+    total: 'Executions',
+    tauxReussite: 'Success rate',
+    mediane: 'Median duration',
+    medianeAide: 'Half finish in less.',
+    p95: '95th percentile',
+    tendance: 'Trend',
+    autres: 'Other',
+    echecs: 'What breaks',
+    echecsAide:
+      'Messages are grouped by cause: addresses, numbers and identifiers are replaced, which gathers what is really a single failure.',
+    aucunEchec: 'No failures in this period.',
+    aucunEchecBot: 'None',
+    fois: '{{count}} times',
+    depuis: 'Seen from {{premier}} to {{dernier}}',
+    voirUnExemple: 'Open an execution',
+    parBot: 'By bot',
+    dernierEchec: 'Last failure',
+  },
   planifications: {
     titre: 'Schedules',
     intro:
@@ -222,6 +248,7 @@ export const en: Traductions = {
       execution: 'Executions',
       schedule: 'Schedules',
       apikey: 'API keys',
+      stats: 'Insights',
     },
     portees: {
       aucune: 'None',
@@ -267,6 +294,9 @@ export const en: Traductions = {
       read: 'View API keys',
       create: 'Create an API key',
       delete: 'Revoke an API key',
+    },
+    stats: {
+      read: 'View insights',
     },
   },
   executions: {

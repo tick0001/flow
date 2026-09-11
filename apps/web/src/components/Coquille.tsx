@@ -19,6 +19,7 @@ const LIENS = [
   { to: '/bots', cle: 'navigation.bots', droit: ['bot', 'read'] },
   { to: '/executions', cle: 'navigation.executions', droit: ['execution', 'read'] },
   { to: '/planifications', cle: 'navigation.planifications', droit: ['schedule', 'read'] },
+  { to: '/pilotage', cle: 'navigation.statistiques', droit: ['stats', 'read'] },
 ] as const;
 
 function LienBarre({ to, children }: { to: string; children: ReactNode }) {

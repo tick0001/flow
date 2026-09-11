@@ -69,7 +69,7 @@ export const fr = {
     bots: 'Bots',
     executions: 'Exécutions',
     planifications: 'Planifications',
-    statistiques: 'Statistiques',
+    statistiques: 'Pilotage',
     reglages: 'Réglages',
     retour: 'Retour',
     ouvrirMenu: 'Ouvrir le menu',
@@ -160,6 +160,32 @@ export const fr = {
     confirmerSuppression: 'Supprimer ce profil ?',
     aucun: 'Aucun profil.',
   },
+  pilotage: {
+    titre: 'Pilotage',
+    intro:
+      'Ce qui casse le plus souvent, et depuis quand. Les chiffres du haut disent s’il faut se poser la question ; le tableau des causes y répond.',
+    jours: '{{count}} jours',
+    exporter: 'Exporter en CSV',
+    aucune: 'Rien à piloter sur cette période.',
+    aucuneAide: 'Lancez des bots, ou élargissez la période.',
+    total: 'Exécutions',
+    tauxReussite: 'Taux de réussite',
+    mediane: 'Durée médiane',
+    medianeAide: 'La moitié tient en moins.',
+    p95: '95ᵉ centile',
+    tendance: 'Tendance',
+    autres: 'Autres',
+    echecs: 'Ce qui casse',
+    echecsAide:
+      'Les messages sont regroupés par cause : les adresses, les nombres et les identifiants sont remplacés, ce qui rassemble ce qui n’est qu’une seule panne.',
+    aucunEchec: 'Aucun échec sur cette période.',
+    aucunEchecBot: 'Aucun',
+    fois: '{{count}} fois',
+    depuis: 'Vu de {{premier}} à {{dernier}}',
+    voirUnExemple: 'Voir une exécution',
+    parBot: 'Par bot',
+    dernierEchec: 'Dernier échec',
+  },
   planifications: {
     titre: 'Planifications',
     intro:
@@ -223,6 +249,7 @@ export const fr = {
       execution: 'Exécutions',
       schedule: 'Planifications',
       apikey: 'Clés d’API',
+      stats: 'Pilotage',
     },
     portees: {
       aucune: 'Aucun',
@@ -268,6 +295,9 @@ export const fr = {
       read: 'Voir les clés d’API',
       create: 'Créer une clé d’API',
       delete: 'Révoquer une clé d’API',
+    },
+    stats: {
+      read: 'Voir le pilotage',
     },
   },
   executions: {

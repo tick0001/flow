@@ -6,6 +6,8 @@ import type {
   ExecutionLog as ExecutionLogServeur,
   ExecutionSummary as ExecutionSummaryServeur,
   IssuedApiKey as IssuedApiKeyServeur,
+  JourStats as JourStatsServeur,
+  Pilotage as PilotageServeur,
   Schedule as ScheduleServeur,
   ScheduleDetail as ScheduleDetailServeur,
   UserSummary as UserSummaryServeur,
@@ -67,6 +69,8 @@ export type UserSummary = Transporte<UserSummaryServeur>;
 export type ApiKey = Transporte<ApiKeyServeur>;
 export type IssuedApiKey = Transporte<IssuedApiKeyServeur>;
 export type CronPreview = Transporte<CronPreviewServeur>;
+export type JourStats = Transporte<JourStatsServeur>;
+export type Pilotage = Transporte<PilotageServeur>;
 export type Schedule = Transporte<ScheduleServeur>;
 export type ScheduleDetail = Transporte<ScheduleDetailServeur>;
 
