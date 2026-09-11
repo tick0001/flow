@@ -20,3 +20,4 @@ export * from './modules/admin.js';
 export * from './modules/schedules.js';
 export * from './modules/apikeys.js';
 export * from './modules/stats.js';
+export * from './modules/plugins.js';
