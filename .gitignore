@@ -30,3 +30,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Configuration locale des serveurs de developpement.
+.claude/
