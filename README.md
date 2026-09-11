@@ -15,26 +15,31 @@ whose stack, conventions and visual language Flow& shares.
 
 ## Where the project stands
 
-**Milestone J6 of eleven. Bots run on their own, and from the outside.** Drop a bot folder, launch
+**Milestone J7 of eleven. Bots run on their own, and what breaks is visible.** Drop a bot folder, launch
 it from the interface through a form derived from its schema, or **on a cron expression**, or **with
 an API key** from a CI pipeline. It runs in a separate worker driving Chromium; the log, the
 progress and the live browser view are pushed by the server. When it breaks, the screenshot at the
 moment of failure and the Playwright trace are on the page.
 
+The **insights** screen answers one question: what breaks most often, and since when. Failure
+messages are grouped by cause — addresses, numbers and identifiers are replaced — which brings two
+hundred unique lines back to the three failures they actually are. The period exports to CSV.
+
 The **OpenAPI description is derived from the controllers**: it describes exactly the routes that
 exist, and a test checks it against the router.
 
 Before it: the entity tree, PostgreSQL Row-Level Security, sessions, rights, account
-administration, both languages, the bot SDK, execution in a separate worker, real time, and history.
+administration, both languages, the bot SDK, execution in a separate worker, real time, history,
+scheduling and API keys.
 
-**There is not yet** dashboards, plugins, or directory integration.
+**There is not yet** plugins or directory integration.
 
 What is already decided and argued lives in [`docs/`](docs/), in French:
 [functional scope](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
 [entities, rights and security](docs/03-entites-droits-securite.md),
 [bot SDK](docs/15-sdk-bots.md), [execution lifecycle](docs/16-cycle-d-execution.md),
 [real time](docs/17-temps-reel.md), [history and storage](docs/18-historique-et-stockage.md),
-[scheduling and API](docs/19-planification-et-api.md),
+[scheduling and API](docs/19-planification-et-api.md), [insights](docs/20-pilotage.md),
 [interface](docs/12-interface.md), [roadmap](docs/06-feuille-de-route.md).
 
 Isolation between organisations is proven by integration tests against a real PostgreSQL database:

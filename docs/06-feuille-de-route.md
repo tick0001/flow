@@ -82,10 +82,19 @@ récupère son résultat, et que la description OpenAPI décrit exactement les r
 ## J7 — Le pilotage
 
 Taux de succès, durées, tendances, bots les plus lancés, échecs les plus fréquents, tableaux de bord
-et exports.
+et exports. Voir [le pilotage](20-pilotage.md).
 
 Se termine quand la question « qu'est-ce qui casse le plus souvent, et depuis quand » se répond en
 un écran.
+
+Ce qui fait tenir cet écran n'est ni le graphique ni les taux, mais la **signature** : le message
+d'échec débarrassé de ce qui varie. Sans elle, deux cents échecs donnent deux cents lignes uniques,
+et le tableau de bord ne dit rien que la liste des exécutions ne disait déjà.
+
+Le droit `stats:read` naît ici. Une installation déjà en service ne l'accorde à personne tant que
+quelqu'un ne va pas le cocher : l'initialisation refuse de s'exécuter sur une base peuplée. Une
+commande qui aligne les droits d'un profil sur le catalogue après une montée de version reste à
+écrire — elle vaudra pour tous les jalons qui ajouteront un droit.
 
 ## J8 — Les plugins
 
