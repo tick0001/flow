@@ -76,11 +76,13 @@ export class ParameterValidatorService {
     throw new BadRequestException({
       message: 'Parametres invalides.',
       issues: (valider.errors ?? []).map((erreur) => ({
-        // `instancePath` vaut « /url » : le decoupage rend le nom du champ tel
-        // que le formulaire le connait, pour qu'il sache sous quel controle
-        // afficher le message.
-        chemin: erreur.instancePath.replace(/^\//, '').replace(/\//g, '.'),
+        chemin: champFautif(erreur),
+        // Le texte d'Ajv, en anglais, sert de dernier recours : l'interface
+        // traduit d'abord `code` et `params`, et ne retombe dessus que pour une
+        // contrainte qu'elle ne connait pas encore.
         message: erreur.message ?? 'valeur refusee',
+        code: erreur.keyword,
+        params: erreur.params as Record<string, unknown>,
       })),
     });
   }
@@ -108,4 +110,24 @@ export class ParameterValidatorService {
 
     return valider;
   }
+}
+
+/**
+ * Le champ que l'erreur concerne.
+ *
+ * `instancePath` vaut « /url » pour la plupart des contraintes, et le decoupage
+ * suffit. **Sauf pour `required`** : Ajv la rattache a l'objet parent, donc a un
+ * chemin vide, et le nom du champ manquant vit dans `params.missingProperty`.
+ * Sans ce cas particulier, le message le plus frequent de tous -- « ce champ est
+ * obligatoire » -- ne se serait attache a aucun controle, et serait reste
+ * invisible.
+ */
+function champFautif(erreur: { keyword: string; instancePath: string; params: unknown }): string {
+  if (erreur.keyword === 'required') {
+    const params = erreur.params as { missingProperty?: unknown };
+
+    if (typeof params.missingProperty === 'string') return params.missingProperty;
+  }
+
+  return erreur.instancePath.replace(/^\//, '').replace(/\//g, '.');
 }

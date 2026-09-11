@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, api } from '@/lib/api';
+import { ApiError, api, type SouciDeChamp } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import type { BotSummary, ExecutionSummary } from '@/lib/types';
 import {
@@ -200,7 +201,11 @@ function Lancement({
     },
     onError: (erreur: unknown) => {
       if (erreur instanceof ApiError && erreur.issues) {
-        setErreurs(Object.fromEntries(erreur.issues.map((souci) => [souci.chemin, souci.message])));
+        setErreurs(
+          Object.fromEntries(
+            erreur.issues.map((souci) => [souci.chemin, messageDeSouci(souci, t)]),
+          ),
+        );
         setRefus(null);
 
         return;
@@ -309,4 +314,28 @@ function Parametres({ schema }: { schema: SchemaObjet }) {
       ))}
     </dl>
   );
+}
+
+/**
+ * Le message a montrer sous un champ refuse.
+ *
+ * **La contrainte se traduit, pas le texte du serveur.** Le validateur du serveur
+ * rend le motif dans sa propre langue -- « must match format "uri" » --, ce qui
+ * ferait de l'anglais au milieu d'une interface francaise, sur le champ le plus
+ * courant d'un bot de navigateur. Le code de la contrainte et ses parametres
+ * traversent donc, et c'est ici que la phrase se fabrique.
+ *
+ * Le texte du serveur reste le dernier recours : une contrainte qu'on n'a pas
+ * encore nommee vaut mieux affichee en anglais que pas affichee du tout.
+ */
+function messageDeSouci(souci: SouciDeChamp, t: TFunction): string {
+  if (!souci.code) return souci.message;
+
+  const clef = `contraintes.${souci.code}`;
+  // i18next rend la clef elle-meme quand elle n'existe pas : c'est ce qui permet
+  // de retomber sur le texte du serveur sans avoir a tenir la liste des
+  // contraintes connues a deux endroits.
+  const traduit = t(clef, { ...souci.params });
+
+  return traduit === clef ? souci.message : traduit;
 }

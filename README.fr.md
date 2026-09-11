@@ -15,22 +15,30 @@ ITSM, dont Flow& reprend la pile technique, les conventions et l'écriture visue
 
 ## Où en est le projet
 
-**Jalon J1 sur onze.** Le socle tient, et le cœur du modèle aussi : l'arbre des entités, le
-Row-Level Security de PostgreSQL, les sessions, les droits, et les deux langues. On se connecte, on
-administre l'arbre. **Aucun bot ne s'exécute encore** — il n'y a ni worker ni SDK de bot, c'est J2
-et J3.
+**Jalon J3 sur onze. Les bots s'exécutent.** On dépose un dossier de bot, on le lance depuis
+l'interface avec un formulaire déduit de son schéma, et il tourne dans un worker séparé qui pilote
+Chromium. Le journal se remplit au fil de l'eau, on peut interrompre en cours de route, et un
+redémarrage de l'API ne perd ni l'exécution ni son résultat.
+
+Avant lui : l'arbre des entités, le Row-Level Security de PostgreSQL, les sessions, les droits,
+l'administration des comptes, les deux langues, et le SDK de bots.
+
+**Il n'y a pas encore de temps réel** — l'interface relit périodiquement, le WebSocket et la vue en
+direct du navigateur arrivent au jalon J4 — ni d'historique consultable en profondeur, ni de
+planification.
 
 Ce qui est déjà décidé et argumenté vit dans [`docs/`](docs/) :
 [périmètre](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
 [entités, droits et sécurité](docs/03-entites-droits-securite.md),
-[SDK de bots](docs/15-sdk-bots.md),
+[SDK de bots](docs/15-sdk-bots.md), [cycle d'une exécution](docs/16-cycle-d-execution.md),
 [interface](docs/12-interface.md), [feuille de route](docs/06-feuille-de-route.md).
 
 Le cloisonnement entre organisations est prouvé par des tests d'intégration contre une vraie base
 PostgreSQL : ils échouent tous quand on les pointe sur le rôle propriétaire, et c'est ce qui leur
-donne une valeur. La
-[feuille de route](docs/06-feuille-de-route.md) dit dans quel ordre la suite arrive et à quoi se
-reconnaît chaque étape terminée.
+donne une valeur. L'interruption est éprouvée de la même façon, contre un vrai navigateur : les
+tests expirent à deux minutes si l'on retire la fermeture du contexte, au lieu de finir en cinq
+secondes. La [feuille de route](docs/06-feuille-de-route.md) dit dans quel ordre la suite arrive et
+à quoi se reconnaît chaque étape terminée.
 
 ## Ce que ce sera
 
@@ -61,11 +69,19 @@ pnpm install
 cp .env.example .env
 pnpm services:up      # PostgreSQL et Redis, sur des ports décalés
 pnpm db:migrate       # schéma, déclencheurs, politiques RLS
+pnpm navigateurs      # Chromium, pour le worker — une seule fois
 FLOW_ADMIN_PASSWORD="choisissez-en-un-vrai" pnpm db:init
-pnpm dev              # API sur :3100, interface sur :5273
+pnpm dev              # API :3100, interface :5273, worker
 ```
 
 Puis <http://localhost:5273>. La première connexion impose un changement de mot de passe.
+
+Un bot de référence est déjà déposé dans [`bots/`](bots/exemple-bonjour) : construisez-le
+(`pnpm build`), ouvrez **Bots**, et lancez-le sur une adresse de votre choix.
+
+Le worker installe ses navigateurs à part, et jamais au démarrage : une application qui télécharge
+Chromium au premier lancement transforme une panne de proxy d'entreprise en application qui ne
+démarre pas.
 
 Les ports sont décalés — 5433, 6380, 3100, 5273 — pour que Flow& et les autres projets de la
 collection tournent côte à côte.

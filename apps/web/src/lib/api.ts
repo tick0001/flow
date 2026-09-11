@@ -7,12 +7,28 @@
  * passe quand une reponse n'est pas celle qu'on attendait.
  */
 
+/**
+ * Un souci sur un champ precis.
+ *
+ * `code` et `params` decrivent la contrainte violee -- `required`, `format`,
+ * `minLength` -- et permettent a l'interface de rendre le message dans la langue
+ * du lecteur. `message` est le texte du serveur : il sert de dernier recours pour
+ * une contrainte que l'interface ne sait pas encore nommer, et vaut mieux qu'un
+ * champ silencieux.
+ */
+export interface SouciDeChamp {
+  chemin: string;
+  message: string;
+  code?: string;
+  params?: Record<string, unknown>;
+}
+
 /** Erreur portee par une reponse de l'API, avec son statut. */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
-    readonly issues?: { chemin: string; message: string }[],
+    readonly issues?: SouciDeChamp[],
   ) {
     super(message);
     this.name = 'ApiError';
@@ -21,7 +37,7 @@ export class ApiError extends Error {
 
 interface CorpsErreur {
   message?: string | string[];
-  issues?: { chemin: string; message: string }[];
+  issues?: SouciDeChamp[];
 }
 
 async function lireErreur(reponse: Response): Promise<ApiError> {

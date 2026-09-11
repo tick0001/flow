@@ -78,6 +78,17 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Les tests du worker lancent un vrai Chromium : ils ouvrent une page, la
+      # laissent attendre un element qui ne viendra jamais, et verifient que la
+      # fermeture du contexte l'interrompt. Un navigateur simule ne prouverait
+      # rien de ce qui casse en pratique.
+      #
+      # `--with-deps` installe aussi les bibliotheques systeme que Chromium
+      # reclame : sans elles il se lance et meurt aussitot, sur un message qui
+      # nomme un `.so` et non ce qui manque.
+      - name: Navigateurs
+        run: pnpm navigateurs
+
       - name: Migrations
         run: pnpm db:migrate
 

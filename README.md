@@ -15,18 +15,26 @@ whose stack, conventions and visual language Flow& shares.
 
 ## Where the project stands
 
-**Milestone J1 of eleven.** The foundation holds, and so does the core of the model: the entity
-tree, PostgreSQL Row-Level Security, sessions, rights, and both languages. You can sign in and
-administer the tree. **No bot runs yet** — there is no worker and no bot SDK; those are J2 and J3.
+**Milestone J3 of eleven. Bots run.** Drop a bot folder, launch it from the interface through a
+form derived from its schema, and it runs in a separate worker driving Chromium. The log fills as it
+goes, you can cancel mid-run, and restarting the API loses neither the execution nor its result.
+
+Before it: the entity tree, PostgreSQL Row-Level Security, sessions, rights, account
+administration, both languages, and the bot SDK.
+
+**There is no real time yet** — the interface polls; WebSockets and the live browser view arrive at
+J4 — no deep history browsing, and no scheduling.
 
 What is already decided and argued lives in [`docs/`](docs/), in French:
 [functional scope](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
 [entities, rights and security](docs/03-entites-droits-securite.md),
-[bot SDK](docs/15-sdk-bots.md),
+[bot SDK](docs/15-sdk-bots.md), [execution lifecycle](docs/16-cycle-d-execution.md),
 [interface](docs/12-interface.md), [roadmap](docs/06-feuille-de-route.md).
 
 Isolation between organisations is proven by integration tests against a real PostgreSQL database:
-they all fail when pointed at the owner role, which is what makes them worth anything. The
+they all fail when pointed at the owner role, which is what makes them worth anything. Cancellation
+is proven the same way, against a real browser: the tests time out at two minutes if the browser
+context close is removed, instead of finishing in five seconds. The
 [roadmap](docs/06-feuille-de-route.md) says in what order the rest arrives, and how each step is
 recognised as finished.
 
@@ -59,11 +67,18 @@ pnpm install
 cp .env.example .env
 pnpm services:up      # PostgreSQL and Redis, on shifted ports
 pnpm db:migrate       # schema, triggers, RLS policies
+pnpm navigateurs      # Chromium, for the worker — once
 FLOW_ADMIN_PASSWORD='pick-a-real-one' pnpm db:init
-pnpm dev              # API on :3100, interface on :5273
+pnpm dev              # API :3100, interface :5273, worker
 ```
 
 Then <http://localhost:5273>. The first sign-in forces a password change.
+
+A reference bot already sits in [`bots/`](bots/exemple-bonjour): build it (`pnpm build`), open
+**Bots**, and run it against an address of your choosing.
+
+The worker installs its browsers separately, and never at startup: an application that downloads
+Chromium on first launch turns a corporate proxy outage into an application that will not start.
 
 Ports are shifted from the usual ones — 5433, 6380, 3100, 5273 — so that Flow& and the other
 projects of the collection can run side by side.

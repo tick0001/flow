@@ -116,10 +116,21 @@ avec temporisation de 700 ms pour ne pas recharger sept fois pendant une copie d
 Rien de tout cela ne subsiste. Le manifeste est validé par Zod au chargement : un bot mal formé est
 refusé avec un motif lisible, et non instancié à moitié.
 
-**Le rechargement passe par la file, pas par le disque.** Surveiller un dossier depuis plusieurs
-workers ferait recharger chacun à son rythme, et un run en cours verrait son module disparaître sous
-lui. Un administrateur demande la relecture, l'API publie l'ordre, chaque worker recharge entre deux
-exécutions.
+**Le worker charge un bot au moment de l'exécuter, et pas avant.** Une version antérieure de ce
+document annonçait un ordre de relecture diffusé par la file ; l'implémentation a trouvé plus simple,
+et ce paragraphe dit ce qui est fait.
+
+Le worker relit le manifeste et compare la date du module à celle qu'il a en cache. Trois
+conséquences, et c'est pour elles que le mécanisme est celui-là : un bot déposé pendant que le worker
+tourne est pris au lancement suivant, sans rien à diffuser ; un module modifié est réimporté ; et un
+run en cours ne voit jamais son module changer sous lui, l'import ayant lieu avant que le bot ne
+démarre.
+
+Le prix est une entrée de plus dans le cache de modules de Node à chaque version déposée, que rien ne
+libère. C'est le même prix qu'un ordre de relecture aurait coûté — sans le mécanisme.
+
+Côté API, la relecture reste explicite : un administrateur la demande depuis le catalogue. Aucune
+surveillance de dossier, qui rechargerait sept fois pendant une copie de fichiers.
 
 ## Le temps réel sans circuit permanent
 
