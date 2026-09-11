@@ -73,7 +73,8 @@ capture, la trace et la ligne de journal fautive sont à l'écran.
 ## J6 — La planification et l'API
 
 Planifications par expression cron, clés d'API, points d'entrée REST pour lister, déclencher et
-suivre, description OpenAPI dérivée des contrôleurs.
+suivre, description OpenAPI dérivée des contrôleurs. Voir
+[la planification et l'API](19-planification-et-api.md).
 
 Se termine quand une chaîne d'intégration continue extérieure déclenche un bot avec une clé et
 récupère son résultat, et que la description OpenAPI décrit exactement les routes qui existent.
