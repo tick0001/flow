@@ -12,6 +12,7 @@ import type {
   UserSummary,
 } from '@flow/contracts';
 import { and, authorizations, eq, inArray, sql, users } from '@flow/db';
+import { displayNameOf } from '../common/display-name.js';
 import { requireContext } from '../common/request-context.js';
 import { DatabaseService } from '../database/database.service.js';
 import { PasswordService } from '../auth/password.service.js';
@@ -28,12 +29,6 @@ interface LigneCompte extends Record<string, unknown> {
   mustChangePassword: boolean;
   authSource: 'local' | 'ldap';
   lastLoginAt: Date | null;
-}
-
-function displayNameOf(ligne: LigneCompte): string {
-  const parties = [ligne.firstName, ligne.lastName].filter(Boolean);
-
-  return parties.length > 0 ? parties.join(' ') : ligne.username;
 }
 
 /**

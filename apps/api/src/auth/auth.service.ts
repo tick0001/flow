@@ -8,6 +8,7 @@ import {
 import type { AvailableContext, SessionContext } from '@flow/contracts';
 import { eq, users } from '@flow/db';
 import { isLocale } from '@flow/i18n';
+import { displayNameOf } from '../common/display-name.js';
 import { DatabaseService } from '../database/database.service.js';
 import { LoginThrottleService } from './login-throttle.service.js';
 import { PasswordService } from './password.service.js';
@@ -18,16 +19,6 @@ import { SessionService, type IssuedSession, type SessionRecord } from './sessio
 export interface LoginMetadata {
   userAgent?: string | undefined;
   ipAddress?: string | undefined;
-}
-
-function displayNameOf(user: {
-  firstName: string | null;
-  lastName: string | null;
-  username: string;
-}): string {
-  const parties = [user.firstName, user.lastName].filter(Boolean);
-
-  return parties.length > 0 ? parties.join(' ') : user.username;
 }
 
 function toAvailableContext(ligne: AuthorizedEntity): AvailableContext {

@@ -11,6 +11,8 @@ export * from './context.js';
 export * from './types.js';
 export * from './schema/index.js';
 
+export type { SQL } from 'drizzle-orm';
+
 export {
   and,
   asc,

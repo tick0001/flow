@@ -51,3 +51,27 @@ export const CANAL_ANNULATION = 'flow.annulation';
 
 export const cancelOrderSchema = z.object({ executionId: z.uuid() });
 export type CancelOrder = z.infer<typeof cancelOrderSchema>;
+
+/**
+ * Periode du battement de coeur d'un worker sur les executions qu'il detient.
+ *
+ * Un worker tue ne vient pas dire qu'il est parti : sans ce battement, une
+ * execution resterait `running` pour toujours, et rien ne distinguerait un run
+ * d'une heure d'une machine redemarree.
+ */
+export const BATTEMENT_MS = 15_000;
+
+/**
+ * Silence au-dela duquel une execution est declaree orpheline.
+ *
+ * Quatre battements manques, et non un : un seul saute sur une pause du
+ * ramasse-miettes ou une base momentanement lente, et declarer abandonnee une
+ * execution qui tourne encore est bien pire que d'attendre une minute -- on
+ * perdrait son resultat alors qu'il allait arriver.
+ *
+ * **Derive de la periode plutot que reglable.** Deux variables d'environnement,
+ * une dans le worker et une dans l'API, finiraient par se contredire sur une
+ * installation : un delai plus court que la periode ferait declarer orphelines
+ * toutes les executions, en permanence, sans qu'aucun journal ne dise pourquoi.
+ */
+export const BATTEMENT_PERDU_MS = BATTEMENT_MS * 4;
