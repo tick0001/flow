@@ -1,0 +1,56 @@
+# L'API de Flow&, hors conteneurs.
+#
+# A poser dans /etc/systemd/system/, puis :
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now flow-api
+#
+# Voir docs/23-installation.md, section « Sans conteneurs ».
+
+[Unit]
+Description=Flow& - API
+Documentation=https://github.com/tick-and/flow
+# `Wants` et non `Requires` : l'API demarre meme si la base tarde, et se
+# reconnecte. `Requires` la ferait s'arreter avec PostgreSQL, ce qui
+# transformerait un redemarrage de la base en incident manuel.
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=flow
+Group=flow
+WorkingDirectory=/opt/flow
+
+# La configuration vit dans un fichier a part, lisible du seul compte de
+# service : il porte les mots de passe de la base et les secrets de session.
+#   sudo chown flow:flow /opt/flow/.env && sudo chmod 600 /opt/flow/.env
+EnvironmentFile=/opt/flow/.env
+Environment=NODE_ENV=production
+
+ExecStart=/usr/bin/node --enable-source-maps /opt/flow/apps/api/dist/main.js
+
+Restart=always
+RestartSec=5
+
+# Journal dans journald, sous l'identite du service : `journalctl -u flow-api`.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=flow-api
+
+# Durcissement. Chacune de ces lignes retire une capacite dont l'API n'a pas
+# besoin -- et qu'un defaut, un jour, pourrait vouloir emprunter.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# Les seuls chemins ou l'API ecrit : le stockage des pieces d'execution.
+ReadWritePaths=/var/lib/flow
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

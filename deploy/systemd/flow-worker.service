@@ -1,0 +1,55 @@
+# Le worker de Flow&, hors conteneurs.
+#
+# Il pilote Chromium : c'est le service qui consomme la memoire et le
+# processeur. Sur une machine chargee, on en fait tourner plusieurs -- sur
+# plusieurs machines de preference, la file les arbitre.
+#
+# A poser dans /etc/systemd/system/, puis :
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now flow-worker
+
+[Unit]
+Description=Flow& - Worker
+Documentation=https://github.com/tick-and/flow
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=flow
+Group=flow
+WorkingDirectory=/opt/flow
+
+EnvironmentFile=/opt/flow/.env
+Environment=NODE_ENV=production
+# Les navigateurs installes par `playwright install` pour le compte de service.
+Environment=PLAYWRIGHT_BROWSERS_PATH=/var/lib/flow/navigateurs
+
+ExecStart=/usr/bin/node --enable-source-maps /opt/flow/apps/worker/dist/main.js
+
+# **Arret en douceur.** Le worker attend que ses executions en cours posent leur
+# denouement avant de sortir : les tuer laisserait des lignes `running` que le
+# balayage mettrait une minute a declarer abandonnees.
+KillSignal=SIGTERM
+TimeoutStopSec=120
+
+Restart=always
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=flow-worker
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/flow
+# **Pas de `RestrictNamespaces` ici**, a la difference de l'API : Chromium
+# ouvre des espaces de noms pour son bac a sable, et les lui refuser le fait
+# demarrer puis mourir sur un message qui parle de « sandbox » sans dire qui
+# l'a interdit.
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
