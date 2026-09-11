@@ -19,3 +19,4 @@ export * from './modules/auth.js';
 export * from './modules/admin.js';
 export * from './modules/schedules.js';
 export * from './modules/apikeys.js';
+export * from './modules/stats.js';
