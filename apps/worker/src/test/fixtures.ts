@@ -38,6 +38,8 @@ export interface Fixture {
   /** Insere une execution en attente et rend son identifiant. */
   mettreEnAttente: (botId: string, parameters?: Record<string, unknown>) => Promise<string>;
   relire: (executionId: string) => Promise<LigneRelue>;
+  /** Dossier de sortie d'une execution, tel que le SDK le promet au bot. */
+  dossierDeSortie: (executionId: string) => string;
   journalDe: (executionId: string) => Promise<{ seq: number; level: string; message: string }[]>;
   cleanup: () => Promise<void>;
 }
@@ -198,6 +200,7 @@ export async function createFixture(prefix: string): Promise<Fixture> {
     deposerBot,
     mettreEnAttente,
     relire,
+    dossierDeSortie: (executionId: string) => join(racine, 'sorties', executionId),
     journalDe,
     cleanup,
   };

@@ -31,6 +31,14 @@ interface EnCours {
   interruption: Interruption | undefined;
   /** Ferme le contexte navigateur. C'est ce qui interrompt reellement un bot. */
   fermerContexte: (() => Promise<void>) | undefined;
+  /**
+   * Dossier de sortie, range a la fin quoi qu'il arrive.
+   *
+   * Porte ici et non dans le deroulement, parce que c'est la seule facon de le
+   * ranger aussi quand le bot leve : un echec ou une interruption laissaient
+   * autrement un dossier vide par execution, pour toujours.
+   */
+  outputDir: string | undefined;
   minuteur: NodeJS.Timeout;
 }
 
@@ -88,6 +96,7 @@ export class Executeur {
       demarre,
       interruption: undefined,
       fermerContexte: undefined,
+      outputDir: undefined,
       minuteur: setTimeout(() => {
         this.interrompre(reclamee.id, 'delai');
       }, env.WORKER_RUN_TIMEOUT_SECONDS * 1000),
@@ -116,6 +125,9 @@ export class Executeur {
         }
       }
     }
+
+    // Le rangement avant la fermeture du journal : il peut y ecrire une ligne.
+    if (suivi.outputDir) await this.rangerDossier(suivi.outputDir, journal);
 
     // Le journal et la progression avant le denouement : quand l'interface voit
     // un etat terminal, elle arrete de relire, et une ligne ecrite apres ne
@@ -252,6 +264,8 @@ export class Executeur {
 
     const outputDir = await this.preparerDossier(reclamee.id);
 
+    suivi.outputDir = outputDir;
+
     const resultat = await bot.run({
       params: lecture.data,
       page,
@@ -264,8 +278,6 @@ export class Executeur {
       signal: suivi.abandon.signal,
       outputDir,
     });
-
-    await this.rangerDossier(outputDir, journal);
 
     // L'interruption d'abord, meme quand le bot a rendu la main proprement : il a
     // vu le signal et s'est arrete, ce qui est le comportement attendu -- pas une

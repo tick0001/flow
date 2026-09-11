@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from '@flow/db';
 import { loadEnv } from '../config/env.js';
@@ -67,6 +69,25 @@ export default defineBot({
 });
 `;
 
+/** Un bot qui depose un fichier dans son dossier de sortie. */
+const BOT_QUI_DEPOSE = `
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { defineBot, z } from '@flow/bot-sdk';
+
+export default defineBot({
+  id: 'essai.depose',
+  name: 'depose',
+  version: '1.0.0',
+  parameters: z.object({}),
+  async run({ outputDir }) {
+    await writeFile(join(outputDir, 'capture.txt'), 'quelque chose', 'utf8');
+
+    return { message: 'Fichier depose.' };
+  },
+});
+`;
+
 describe("Cycle de vie d'une execution", () => {
   let fixture: Fixture;
   let depot: Depot;
@@ -74,11 +95,16 @@ describe("Cycle de vie d'une execution", () => {
   let executeur: Executeur;
   let botReussi: string;
   let botSuspendu: string;
+  let botQuiDepose: string;
 
   beforeAll(async () => {
     fixture = await createFixture('TEST-EXEC-W');
     botReussi = await fixture.deposerBot('reussi', BOT_REUSSI, SCHEMA_URL);
     botSuspendu = await fixture.deposerBot('suspendu', BOT_SUSPENDU, {
+      type: 'object',
+      properties: {},
+    });
+    botQuiDepose = await fixture.deposerBot('depose', BOT_QUI_DEPOSE, {
       type: 'object',
       properties: {},
     });
@@ -183,6 +209,11 @@ describe("Cycle de vie d'une execution", () => {
     // ce qu'il verifie. Cinq secondes laissent de la marge a une machine chargee
     // et restent a deux ordres de grandeur du comportement sans fermeture.
     expect(ecoule).toBeLessThan(5000);
+
+    // Le dossier de sortie est range meme quand le bot leve. Sans cela, chaque
+    // execution interrompue ou en echec laisserait un dossier vide -- pour
+    // toujours, et sans que personne ne pense a le nettoyer.
+    expect(existsSync(fixture.dossierDeSortie(id))).toBe(false);
   }, 120_000);
 
   it('refuse des parametres que le schema du bot rejette', async () => {
@@ -244,6 +275,23 @@ describe("Cycle de vie d'une execution", () => {
 
     expect((await fixture.relire(id)).status).toBe('cancelled');
   }, 120_000);
+
+  it('garde le dossier de sortie quand le bot y a depose quelque chose', async () => {
+    // L'autre moitie de la regle : un dossier vide disparait, un dossier qui
+    // porte une capture reste. L'effacer perdrait ce que le bot a pris la peine
+    // de produire -- et c'est souvent la seule preuve de ce qu'il a vu.
+    const id = await fixture.mettreEnAttente(botQuiDepose);
+
+    await executeur.executer({ executionId: id, botId: botQuiDepose });
+
+    expect((await fixture.relire(id)).status).toBe('succeeded');
+    expect(existsSync(join(fixture.dossierDeSortie(id), 'capture.txt'))).toBe(true);
+
+    // Et le chemin est dit dans le journal : personne ne devinerait ou regarder.
+    const journal = await fixture.journalDe(id);
+
+    expect(journal.some((ligne) => ligne.message.includes('dossier de sortie'))).toBe(true);
+  });
 
   it("marque abandonnee une execution que l'arret du worker emporte", async () => {
     // `abandoned` et non `cancelled` : personne ne l'a demandee. Les confondre
