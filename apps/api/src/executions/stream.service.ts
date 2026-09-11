@@ -105,8 +105,11 @@ export class ExecutionStreamService {
         else lecteur.error(erreur);
       };
 
+      const lireDetail = async (): Promise<ExecutionDetail> =>
+        runWithContext(context, () => this.executions.get(executionId));
+
       const instantane = async (): Promise<ExecutionDetail> => {
-        const detail = await runWithContext(context, () => this.executions.get(executionId));
+        const detail = await lireDetail();
 
         emettre({ kind: 'snapshot', payload: detail });
 
@@ -155,7 +158,19 @@ export class ExecutionStreamService {
           // ecrite entre les deux ne serait ni relue ni recue.
           debrancher = await this.relais.abonner(executionId, traiter);
 
-          const detail = await instantane();
+          const detail = await lireDetail();
+          const dejaTerminee = isTerminal(detail.status);
+
+          // **L'ordre depend de l'etat, et ce n'est pas un detail.** Le client
+          // ferme des qu'il voit un etat terminal -- il le doit, sinon le
+          // navigateur rouvrirait sans fin le flux d'une execution muette. Envoyer
+          // l'instantane d'abord sur une execution deja finie le ferait donc
+          // raccrocher **avant** le rappel du journal, et l'ecran resterait vide.
+          //
+          // Sur une execution en cours, l'instantane part en premier au
+          // contraire : il fait apparaitre la page tout de suite, sans attendre
+          // que des milliers de lignes aient defile.
+          if (!dejaTerminee) emettre({ kind: 'snapshot', payload: detail });
 
           const rappel = await runWithContext(context, () =>
             this.executions.logs(executionId, { afterSeq: dernierRang, limit: REPRISE_MAX }),
@@ -172,17 +187,30 @@ export class ExecutionStreamService {
             traiter(enRetard);
           }
 
-          // Une execution deja terminee n'emettra plus rien : on ferme plutot que
-          // de tenir un flux ouvert pour l'eternite. Le navigateur ne reconnecte
-          // pas sur une fermeture propre du serveur.
-          if (isTerminal(detail.status)) {
+          // Une execution deja terminee n'emettra plus rien : l'instantane vient
+          // clore le rappel, puis on ferme plutot que de tenir un flux ouvert
+          // pour l'eternite.
+          if (dejaTerminee) {
+            emettre({ kind: 'snapshot', payload: detail });
             fermer();
 
             return;
           }
 
           battement = setInterval(() => {
-            void this.battre(context, lecteur, fermer);
+            void this.battre(context, lecteur, fermer, async () => {
+              // **L'ecran ne doit jamais contredire la base durablement.** Un
+              // etat terminal se sait normalement par un evenement ; mais un
+              // worker tue n'en publie aucun, et une diffusion peut se perdre.
+              // Une relecture par battement -- un acces d'index toutes les
+              // quinze secondes -- ferme le flux dans tous les cas restants.
+              const relu = await lireDetail();
+
+              if (!isTerminal(relu.status)) return;
+
+              emettre({ kind: 'snapshot', payload: relu });
+              fermer();
+            });
           }, BATTEMENT_MS);
         } catch (erreur: unknown) {
           // Execution invisible ou inexistante : le flux se ferme en erreur, et
@@ -212,6 +240,7 @@ export class ExecutionStreamService {
     context: FlowContext,
     lecteur: { next: (message: MessageEvent) => void },
     fermer: (erreur?: unknown) => void,
+    verifierLEtat: () => Promise<void>,
   ): Promise<void> {
     try {
       if (!(await this.sessions.resolveById(context.sessionId))) {
@@ -219,10 +248,12 @@ export class ExecutionStreamService {
 
         return;
       }
+
+      await verifierLEtat();
     } catch (erreur: unknown) {
       // Une base momentanement absente ne doit pas fermer le flux : le battement
       // suivant reessaiera. Fermer ici transformerait un hoquet en deconnexion.
-      this.logger.debug(`Revalidation impossible : ${String(erreur)}`);
+      this.logger.debug(`Battement en erreur : ${String(erreur)}`);
     }
 
     lecteur.next({ type: 'battement', data: '' });

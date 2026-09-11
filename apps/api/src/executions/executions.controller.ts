@@ -99,12 +99,21 @@ export class ExecutionsController {
   stream(
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('last-event-id') dernierRang?: string,
+    @Query('afterSeq') depuis?: string,
   ): Observable<MessageEvent> {
-    const rang = Number(dernierRang);
+    // Deux provenances pour le meme point de reprise, et il en faut deux.
+    //
+    // `Last-Event-ID` est envoye par le navigateur quand **il** reconnecte seul,
+    // ce qu'il fait sur une coupure passagere. Mais il abandonne definitivement
+    // si une tentative recoit une erreur HTTP -- ce qui arrive des que l'API
+    // redemarre, le relais repondant alors 502. Le client rouvre donc lui-meme
+    // dans ce cas, et n'a plus que la requete pour dire ou il en est.
+    //
+    // Le plus avance des deux gagne : reprendre trop tot renverrait des lignes
+    // deja affichees, reprendre trop tard en sauterait.
+    const rang = Math.max(rangLisible(depuis), rangLisible(dernierRang));
 
-    // Un en-tete absent ou illisible vaut « je n'ai rien » : rejouer depuis le
-    // debut est toujours correct, alors qu'un rang devine sauterait des lignes.
-    return this.flux.ouvrir(id, Number.isInteger(rang) && rang >= 0 ? rang : -1);
+    return this.flux.ouvrir(id, rang);
   }
 
   /**
@@ -119,4 +128,16 @@ export class ExecutionsController {
   cancel(@Param('id', ParseUUIDPipe) id: string): Promise<ExecutionDetail> {
     return this.executions.cancel(id);
   }
+}
+
+/**
+ * Un rang de reprise, ou -1.
+ *
+ * Une valeur absente ou illisible vaut « je n'ai rien recu » : tout rejouer est
+ * toujours correct, alors qu'un rang devine sauterait des lignes en silence.
+ */
+function rangLisible(valeur: string | undefined): number {
+  const rang = Number(valeur);
+
+  return Number.isInteger(rang) && rang >= 0 ? rang : -1;
 }

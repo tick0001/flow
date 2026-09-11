@@ -8,6 +8,7 @@ import { BATTEMENT_MS, BATTEMENT_PERDU_MS } from '@flow/contracts';
 import { sql } from '@flow/db';
 import { DatabaseService } from '../database/database.service.js';
 import { QueueService } from '../queue/queue.service.js';
+import { ExecutionRelayService } from './relais.service.js';
 
 /**
  * Nombre d'executions en attente examinees par passe.
@@ -63,6 +64,7 @@ export class ExecutionMaintenanceService implements OnApplicationBootstrap, OnMo
   constructor(
     private readonly db: DatabaseService,
     private readonly file: QueueService,
+    private readonly relais: ExecutionRelayService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -150,6 +152,12 @@ export class ExecutionMaintenanceService implements OnApplicationBootstrap, OnMo
       // plus la pour le terminer, et le laisser ferait compter une execution
       // active qui n'existe pas.
       await this.file.remove(ligne.id);
+
+      // Et on le dit a ceux qui regardent. C'est le seul changement d'etat que
+      // l'API decide seule : le worker qui aurait du le publier est justement
+      // celui qui n'est plus la. Sans cette ligne, un ecran ouvert afficherait
+      // « en cours » pour toujours sur une execution que la base dit abandonnee.
+      this.relais.publierChangement(ligne.id, 'abandoned');
     }
 
     return lignes.length;
