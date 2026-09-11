@@ -35,6 +35,7 @@ import { RightsService } from '../auth/rights.service.js';
 import { BotRegistryService } from '../bots/bot-registry.service.js';
 import { ParameterValidatorService } from '../bots/parameter-validator.service.js';
 import { QueueService } from '../queue/queue.service.js';
+import { ExecutionRelayService } from './relais.service.js';
 
 /**
  * Les colonnes que la liste et le detail lisent, declarees une fois.
@@ -134,6 +135,7 @@ export class ExecutionsService {
     private readonly parametres: ParameterValidatorService,
     private readonly rights: RightsService,
     private readonly file: QueueService,
+    private readonly relais: ExecutionRelayService,
   ) {}
 
   /**
@@ -310,6 +312,7 @@ export class ExecutionsService {
       // `startedAt` disent tout, et une phrase en francais posee en base serait
       // lue par quelqu'un qui travaille en anglais.
       await this.file.remove(id);
+      this.relais.publierChangement(id, 'cancelled');
 
       return this.get(id);
     }
@@ -324,6 +327,10 @@ export class ExecutionsService {
     );
 
     await this.file.publishCancel(id);
+    // Aux autres lecteurs, pas au worker : l'etat ne change pas encore, mais
+    // « interruption demandee » doit s'afficher partout, pas seulement chez qui
+    // a clique.
+    this.relais.publierChangement(id, ligne.status);
 
     return this.get(id);
   }

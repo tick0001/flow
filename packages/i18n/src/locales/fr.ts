@@ -236,6 +236,9 @@ export const fr = {
     journal: 'Journal',
     journalVide: 'Aucune ligne de journal.',
     suivi: 'suivi en direct',
+    fluxCoupe: 'Connexion perdue — reprise en cours',
+    vueEnDirect: 'Vue en direct',
+    vueEnDirectAide: 'Diffusée par le navigateur du worker, tant que vous regardez.',
     statut: {
       queued: 'En attente',
       running: 'En cours',

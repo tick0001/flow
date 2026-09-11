@@ -5,11 +5,18 @@ import { QueueModule } from '../queue/queue.module.js';
 import { ExecutionMaintenanceService } from './maintenance.service.js';
 import { ExecutionsController } from './executions.controller.js';
 import { ExecutionsService } from './executions.service.js';
+import { ExecutionRelayService } from './relais.service.js';
+import { ExecutionStreamService } from './stream.service.js';
 
 @Module({
   imports: [AuthModule, BotsModule, QueueModule],
   controllers: [ExecutionsController],
-  providers: [ExecutionsService, ExecutionMaintenanceService],
+  providers: [
+    ExecutionsService,
+    ExecutionMaintenanceService,
+    ExecutionRelayService,
+    ExecutionStreamService,
+  ],
   exports: [ExecutionsService],
 })
 export class ExecutionsModule {}

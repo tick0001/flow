@@ -1,3 +1,4 @@
+import type { ExecutionEvent } from '@flow/contracts';
 import type { RequestContext } from '@flow/db';
 import type { Depot } from './depot.js';
 import { journalDe } from './log.js';
@@ -30,6 +31,8 @@ export class Progression {
     private readonly depot: Depot,
     private readonly context: RequestContext,
     private readonly executionId: string,
+    /** Diffuse l'etape **deja ecrite**. Meme invariant que pour le journal. */
+    private readonly publier: (evenement: ExecutionEvent) => void,
   ) {}
 
   annoncer(step: string, percent?: number): void {
@@ -55,6 +58,11 @@ export class Progression {
     this.enCours = this.enCours.then(async () => {
       try {
         await this.depot.progresser(this.context, this.executionId, valeur.step, valeur.percent);
+
+        this.publier({
+          kind: 'progress',
+          payload: { executionId: this.executionId, step: valeur.step, percent: valeur.percent },
+        });
       } catch (erreur: unknown) {
         // Comme pour le journal : une progression perdue ne doit pas priver
         // l'execution de sa fin.

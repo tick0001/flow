@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, api } from '@/lib/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import {
   dureeLisible,
   estTerminal,
@@ -10,7 +10,7 @@ import {
   TON_DU_NIVEAU,
   TON_DU_STATUT,
 } from '@/lib/executions';
-import { useJournal } from '@/lib/journal';
+import { useFluxExecution, type EtatDuFlux } from '@/lib/flux';
 import type { ExecutionDetail } from '@/lib/types';
 import {
   Badge,
@@ -24,52 +24,40 @@ import {
   SectionTitle,
 } from '@/components/ui/primitives';
 
-/** Cadence de relecture de l'execution elle-meme, tant qu'elle n'est pas terminee. */
-const PERIODE_MS = 1000;
-
 /**
- * Le detail d'une execution.
+ * Le detail d'une execution, en direct.
  *
- * Tout ce qui sert a comprendre un echec est sur cet ecran : le statut, le
- * message, les parametres qui ont reellement ete passes, le resultat, et le
- * journal ligne par ligne. C'est le critere de sortie du jalon J5 -- diagnostiquer
- * sans ouvrir un terminal -- et il se prepare ici.
+ * **Un seul flux alimente tout l'ecran** : l'etat, la progression, le journal et
+ * la vue du navigateur arrivent par la meme connexion, dans l'ordre ou ils se
+ * produisent. Trois sondages separes -- ce que faisait le jalon precedent pour
+ * deux d'entre eux -- auraient affiche un journal en avance sur son statut, ou
+ * l'inverse, selon celui qui revient le premier.
  *
- * La relecture s'arrete d'elle-meme quand l'execution atteint un etat terminal :
- * un onglet laisse ouvert sur une execution d'hier n'a aucune raison d'interroger
- * le serveur toutes les secondes jusqu'a la fin des temps.
+ * Tout ce qui sert a comprendre un echec est ici : le statut, le message, les
+ * parametres reellement passes, le resultat et le journal ligne par ligne.
  */
 export function Execution() {
   const { t, i18n } = useTranslation();
   const { id = '' } = useParams();
   const queryClient = useQueryClient();
 
-  const {
-    data: execution,
-    isPending,
-    error,
-  } = useQuery({
-    queryKey: ['execution', id],
-    queryFn: () => api.get<ExecutionDetail>(`/executions/${id}`),
-    refetchInterval: (requete) =>
-      requete.state.data && !estTerminal(requete.state.data.status) ? PERIODE_MS : false,
-  });
-
-  const termine = execution ? estTerminal(execution.status) : false;
-  const { lignes, injoignable } = useJournal(id, !termine);
+  const { execution, lignes, image, etat } = useFluxExecution(id);
 
   const interruption = useMutation({
     mutationFn: () => api.post<ExecutionDetail>(`/executions/${id}/cancel`),
-    onSuccess: (apres) => {
-      // La reponse porte deja l'etat d'apres : le poser directement evite un
-      // aller-retour de plus, et surtout evite l'instant ou le bouton redevient
-      // actif parce que la relecture n'est pas encore arrivee.
-      queryClient.setQueryData(['execution', id], apres);
+    onSuccess: () => {
+      // L'etat d'apres arrive par le flux, pour tous les lecteurs a la fois. On
+      // ne pose rien ici : ce serait une seconde verite, qui divergerait de ce
+      // que voit le navigateur d'a cote.
       void queryClient.invalidateQueries({ queryKey: ['executions'] });
     },
   });
 
-  if (error instanceof ApiError && error.status === 404) {
+  if (etat === 'ouverture' && !execution) {
+    return <p className="text-muted text-sm">{t('commun.chargement')}</p>;
+  }
+
+  if (!execution) {
     return (
       <div className="space-y-4">
         <Notice ton="critique">{t('erreurs.introuvable')}</Notice>
@@ -80,9 +68,7 @@ export function Execution() {
     );
   }
 
-  if (isPending || !execution) {
-    return <p className="text-muted text-sm">{t('commun.chargement')}</p>;
-  }
+  const termine = estTerminal(execution.status);
 
   return (
     <div className="space-y-6">
@@ -120,7 +106,7 @@ export function Execution() {
         </Pastille>
         <Badge>v{execution.botVersion}</Badge>
         <span className="text-faint font-mono text-xs">{execution.botId}</span>
-        {execution.headed && <Badge ton="info">{t('bots.avecFenetre')}</Badge>}
+        <EtatDuLien etat={etat} />
       </div>
 
       {/* L'interruption demandee et non encore prise en compte : une demande est
@@ -139,6 +125,8 @@ export function Execution() {
       {execution.progress && !termine && (
         <Progression step={execution.progress.step} percent={execution.progress.percent} />
       )}
+
+      <VueEnDirect image={image} visible={!termine} />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Renseignement intitule={t('executions.colonneEntite')} valeur={execution.entity.name} />
@@ -212,8 +200,6 @@ export function Execution() {
           {t('executions.journal')}
         </SectionTitle>
 
-        {injoignable && <Notice ton="attention">{t('erreurs.reseau')}</Notice>}
-
         {lignes.length === 0 ? (
           <p className="text-faint text-sm">{t('executions.journalVide')}</p>
         ) : (
@@ -236,6 +222,62 @@ export function Execution() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * L'etat de la connexion au flux.
+ *
+ * Affiche seulement quand il y a quelque chose a dire. Un temoin permanent
+ * « connecte » sur un ecran qui l'est presque toujours devient invisible a force,
+ * et ne sert alors plus a rien le jour ou il change.
+ */
+function EtatDuLien({ etat }: { etat: EtatDuFlux }) {
+  const { t } = useTranslation();
+
+  if (etat !== 'coupe') return null;
+
+  return <Badge ton="attention">{t('executions.fluxCoupe')}</Badge>;
+}
+
+/**
+ * La vue en direct du navigateur.
+ *
+ * Elle n'apparait **que lorsqu'une image est arrivee**. Un cadre vide en
+ * permanence ferait croire a une panne sur les executions qui n'ont pas encore
+ * ouvert de page -- et sur celles, terminees, qui n'en ouvriront plus.
+ *
+ * Le navigateur du worker ne produit des images que pendant qu'on regarde : le
+ * serveur le lui dit quand ce flux s'ouvre, et le lui redit tant qu'il reste
+ * ouvert.
+ */
+function VueEnDirect({
+  image,
+  visible,
+}: {
+  image: { data: string; width: number; height: number } | undefined;
+  visible: boolean;
+}) {
+  const { t } = useTranslation();
+
+  if (!image || !visible) return null;
+
+  return (
+    <Card>
+      <CardHeader
+        title={t('executions.vueEnDirect')}
+        action={<span className="text-faint text-xs">{t('executions.vueEnDirectAide')}</span>}
+      />
+      <CardBody>
+        <img
+          src={`data:image/jpeg;base64,${image.data}`}
+          alt={t('executions.vueEnDirect')}
+          width={image.width}
+          height={image.height}
+          className="border-line bg-sunken w-full border"
+        />
+      </CardBody>
+    </Card>
   );
 }
 
@@ -274,7 +316,10 @@ function Progression({ step, percent }: { step: string; percent: number | null }
       </div>
       {percent !== null && (
         <div className="bg-sunken border-line h-1.5 w-full border">
-          <div className="bg-brand h-full" style={{ width: `${String(percent)}%` }} />
+          <div
+            className="bg-brand h-full transition-all"
+            style={{ width: `${String(percent)}%` }}
+          />
         </div>
       )}
     </div>

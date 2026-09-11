@@ -75,3 +75,45 @@ export const BATTEMENT_MS = 15_000;
  * toutes les executions, en permanence, sans qu'aucun journal ne dise pourquoi.
  */
 export const BATTEMENT_PERDU_MS = BATTEMENT_MS * 4;
+
+/**
+ * Canal de diffusion d'une execution : journal, progression, statut, images.
+ *
+ * **Un canal par execution, et non un canal global.** Un canal unique obligerait
+ * chaque instance d'API a recevoir tout ce que produisent toutes les executions
+ * de l'installation -- y compris les images du screencast, qui pesent -- pour
+ * jeter presque tout. L'abonnement suit donc les lecteurs : la premiere personne
+ * qui ouvre une execution l'ouvre, la derniere qui part le ferme.
+ */
+export const canalExecution = (executionId: string): string => `flow.execution.${executionId}`;
+
+/**
+ * Canal par lequel l'API dit qu'on regarde une execution.
+ *
+ * Il ne sert qu'aux images. Le journal et la progression sont publies de toute
+ * facon -- ils sont minuscules et deja ecrits en base --, mais **encoder des
+ * images que personne ne regarde couterait un vrai budget processeur au worker**,
+ * pris sur l'execution elle-meme. C'est exactement ce que faisait l'outil
+ * remplace, qui poussait une capture PNG toutes les 800 ms a chaque session
+ * ouverte, qu'on regarde ou non.
+ */
+export const CANAL_REGARD = 'flow.regard';
+
+export const watchOrderSchema = z.object({
+  executionId: z.uuid(),
+  /** Nombre de lecteurs. Zero arrete la diffusion d'images. */
+  watchers: z.number().int().nonnegative(),
+});
+export type WatchOrder = z.infer<typeof watchOrderSchema>;
+
+/**
+ * Periode a laquelle l'API repete qu'on regarde encore.
+ *
+ * Le signal se repete plutot que de s'annoncer une fois : une instance d'API qui
+ * meurt pendant qu'on regarde ne dira jamais qu'on a cesse, et le worker
+ * encoderait des images pour personne jusqu'a la fin du run.
+ */
+export const REGARD_RAPPEL_MS = 10_000;
+
+/** Silence au-dela duquel le worker considere que plus personne ne regarde. */
+export const REGARD_PERIME_MS = REGARD_RAPPEL_MS * 3;

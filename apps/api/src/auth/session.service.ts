@@ -147,21 +147,35 @@ export class SessionService {
    * Relit une session par son identifiant, sans jeton.
    *
    * Reserve aux appels deja authentifies -- le contexte porte l'identifiant --
-   * qui ont besoin de relire l'etat apres l'avoir modifie. Ne remplace jamais
-   * `resolve` : celle-la verifie le secret du cookie, celle-ci suppose la
-   * verification deja faite. Les confondre reviendrait a accepter un
-   * identifiant de session nu comme preuve d'identite.
+   * qui ont besoin de relire l'etat. Ne remplace jamais `resolve` : celle-la
+   * verifie le secret du cookie, celle-ci suppose la verification deja faite.
+   * Les confondre reviendrait a accepter un identifiant de session nu comme
+   * preuve d'identite.
+   *
+   * Elle refait en revanche **toutes les verifications de vivacite** : revoquee,
+   * expiree, compte desactive, compte supprime. Elle ne les faisait pas, ce qui
+   * suffisait a son premier appelant -- une relecture quelques millisecondes
+   * apres l'authentification. Un flux temps reel s'en sert autrement : il vit
+   * des minutes, et sans ces controles une session fermee pendant qu'on regarde
+   * continuerait de recevoir.
    */
   async resolveById(sessionId: string): Promise<SessionRecord | null> {
     const [trouvee] = await this.db.asOwner((tx) =>
       tx
-        .select({ session: sessions, mustChangePassword: users.mustChangePassword })
+        .select({
+          session: sessions,
+          isActive: users.isActive,
+          deletedAt: users.deletedAt,
+          mustChangePassword: users.mustChangePassword,
+        })
         .from(sessions)
         .innerJoin(users, eq(users.id, sessions.userId))
         .where(and(eq(sessions.id, sessionId), isNull(sessions.revokedAt))),
     );
 
     if (!trouvee) return null;
+    if (trouvee.session.expiresAt.getTime() < Date.now()) return null;
+    if (!trouvee.isActive || trouvee.deletedAt !== null) return null;
 
     return {
       id: trouvee.session.id,

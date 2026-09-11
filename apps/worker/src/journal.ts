@@ -1,4 +1,4 @@
-import type { LogLevel } from '@flow/contracts';
+import type { ExecutionEvent, LogLevel } from '@flow/contracts';
 import type { RequestContext } from '@flow/db';
 import type { Depot, LigneDeJournal } from './depot.js';
 import { journalDe } from './log.js';
@@ -53,6 +53,16 @@ export class Journal {
     private readonly depot: Depot,
     private readonly context: RequestContext,
     private readonly executionId: string,
+    /**
+     * Diffuse une ligne **deja ecrite**.
+     *
+     * Appele depuis le vidage et jamais depuis `ecrire`, et c'est l'invariant du
+     * temps reel : rien n'est diffuse qui ne soit deja en base. Une ligne
+     * diffusee mais perdue avant d'etre persistee disparaitrait pour de bon --
+     * un client qui se reconnecte redemande a la base « ce qui suit le rang n »,
+     * et elle ne l'aurait jamais eue.
+     */
+    private readonly publier: (evenement: ExecutionEvent) => void,
   ) {}
 
   /**
@@ -88,6 +98,10 @@ export class Journal {
     this.enCours = this.enCours.then(async () => {
       try {
         await this.depot.journaliser(this.context, this.executionId, paquet);
+
+        for (const ligne of paquet) {
+          this.publier({ kind: 'log', payload: { executionId: this.executionId, ...ligne } });
+        }
       } catch (erreur: unknown) {
         // Un journal qu'on ne peut pas ecrire ne doit pas faire echouer
         // l'execution : le bot fait peut-etre un travail qui compte, et le priver

@@ -18,15 +18,14 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3100',
         changeOrigin: true,
-      },
-      // Le flux temps reel d'une execution. Declare a part parce qu'il faut
-      // `ws: true` : sans lui, la requete de bascule de protocole est relayee
-      // comme une requete HTTP ordinaire et le WebSocket ne s'ouvre jamais --
-      // en developpement seulement, ce qui est le pire cas de figure.
-      '/api/ws': {
-        target: 'ws://localhost:3100',
-        ws: true,
-        changeOrigin: true,
+        // Le flux temps reel d'une execution passe par ici. Rien de special a
+        // declarer : ce sont des evenements diffuses par le serveur sur une
+        // requete HTTP ordinaire, que le relais transmet au fil de l'eau.
+        //
+        // Une entree `ws: true` a vecu ici, ecrite quand l'architecture
+        // annoncait un WebSocket. Elle pointait vers une route qui n'existera
+        // pas : une configuration qui ne sert a rien et qu'on garde par
+        // prudence finit par etre copiee ailleurs.
       },
     },
   },

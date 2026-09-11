@@ -100,27 +100,16 @@ export const executionFrameSchema = z.object({
 export type ExecutionFrame = z.infer<typeof executionFrameSchema>;
 
 /**
- * Ce que le worker renvoie a la fin.
+ * Ce que le **worker publie** sur le canal d'une execution.
  *
- * `output` est un objet libre : c'est la donnee metier du bot, dont le coeur ne
- * peut rien savoir. Il est stocke en `jsonb` et rendu tel quel.
- */
-export const executionOutcomeSchema = z.object({
-  status: executionStatusSchema,
-  message: z.string().max(2000).nullable(),
-  output: z.record(z.string(), z.unknown()).nullable(),
-  durationMs: z.number().int().nonnegative(),
-  /** Identifiants des fichiers deposes dans le stockage : captures, traces. */
-  artifacts: z.array(z.uuid()),
-});
-export type ExecutionOutcome = z.infer<typeof executionOutcomeSchema>;
-
-/**
- * Message diffuse par Redis pub/sub, puis relaye en WebSocket.
+ * Une union discriminee plutot que quatre canaux : l'ordre relatif d'une ligne
+ * de journal, d'une progression et d'un changement d'etat compte pour
+ * l'affichage, et quatre abonnements distincts ne le garantiraient pas.
  *
- * Une union discriminee plutot que trois canaux : l'ordre relatif d'un log,
- * d'une progression et d'un changement de statut compte pour l'affichage, et
- * trois abonnements distincts ne le garantiraient pas.
+ * Le changement d'etat ne porte que l'etat, et non le denouement complet : le
+ * worker publie ce qu'il sait, l'API relaie ce que **ce lecteur-la** a le droit
+ * de voir. Y mettre le detail ferait transiter par Redis une forme calculee pour
+ * un compte, alors que plusieurs comptes lisent la meme execution.
  */
 export const executionEventSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('log'), payload: executionLogSchema }),
@@ -128,11 +117,7 @@ export const executionEventSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('frame'), payload: executionFrameSchema }),
   z.object({
     kind: z.literal('status'),
-    payload: z.object({
-      executionId: z.uuid(),
-      status: executionStatusSchema,
-      outcome: executionOutcomeSchema.nullable(),
-    }),
+    payload: z.object({ executionId: z.uuid(), status: executionStatusSchema }),
   }),
 ]);
 export type ExecutionEvent = z.infer<typeof executionEventSchema>;
@@ -190,6 +175,29 @@ export const executionDetailSchema = executionSummarySchema.extend({
   cancelRequested: z.boolean(),
 });
 export type ExecutionDetail = z.infer<typeof executionDetailSchema>;
+
+/**
+ * Ce que **l'API relaie** au navigateur, sur le flux d'une execution.
+ *
+ * Deux formes distinctes de celles que le worker publie, et la distinction porte
+ * tout le dispositif :
+ *
+ *  - le **journal est un flux** : il s'ajoute, chaque ligne porte son rang, et
+ *    une reprise apres coupure redemande « ce qui suit le rang n » ;
+ *  - l'**etat est un instantane** : il s'ecrase, il ne se rejoue pas, et le
+ *    renvoyer en entier a chaque changement evite au client de redemander le
+ *    detail -- duree, message, resultat -- par une requete de plus.
+ *
+ * Les images ne sont ni l'un ni l'autre : elles sont perissables, et une image
+ * manquee n'a aucun interet a etre rattrapee.
+ */
+export const executionStreamEventSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('snapshot'), payload: executionDetailSchema }),
+  z.object({ kind: z.literal('log'), payload: executionLogSchema }),
+  z.object({ kind: z.literal('progress'), payload: executionProgressSchema }),
+  z.object({ kind: z.literal('frame'), payload: executionFrameSchema }),
+]);
+export type ExecutionStreamEvent = z.infer<typeof executionStreamEventSchema>;
 
 /**
  * Filtres d'une liste d'executions.

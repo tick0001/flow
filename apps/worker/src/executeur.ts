@@ -5,8 +5,10 @@ import { loadEnv, resolveFromRoot } from './config/env.js';
 import type { Depot, Denouement, ExecutionReclamee } from './depot.js';
 import { Journal } from './journal.js';
 import { journalDe } from './log.js';
+import type { Diffusion } from './diffusion.js';
 import type { Navigateurs } from './navigateur.js';
 import { Progression } from './progression.js';
+import { Screencast } from './screencast.js';
 import { chargerBot } from './registre.js';
 
 const log = journalDe('Executeur');
@@ -31,6 +33,8 @@ interface EnCours {
   interruption: Interruption | undefined;
   /** Ferme le contexte navigateur. C'est ce qui interrompt reellement un bot. */
   fermerContexte: (() => Promise<void>) | undefined;
+  /** La vue en direct, ouverte seulement si quelqu'un regarde. */
+  screencast: Screencast | undefined;
   /**
    * Dossier de sortie, range a la fin quoi qu'il arrive.
    *
@@ -57,6 +61,7 @@ export class Executeur {
   constructor(
     private readonly depot: Depot,
     private readonly navigateurs: Navigateurs,
+    private readonly diffusion: Diffusion,
   ) {}
 
   /** Les executions que ce worker detient. Interroge par le battement de coeur. */
@@ -86,8 +91,11 @@ export class Executeur {
     }
 
     const env = loadEnv();
-    const journal = new Journal(this.depot, reclamee.context, reclamee.id);
-    const progression = new Progression(this.depot, reclamee.context, reclamee.id);
+    const publier = (evenement: Parameters<Diffusion['publier']>[1]): void => {
+      this.diffusion.publier(reclamee.id, evenement);
+    };
+    const journal = new Journal(this.depot, reclamee.context, reclamee.id, publier);
+    const progression = new Progression(this.depot, reclamee.context, reclamee.id, publier);
     const abandon = new AbortController();
     const demarre = Date.now();
 
@@ -96,6 +104,7 @@ export class Executeur {
       demarre,
       interruption: undefined,
       fermerContexte: undefined,
+      screencast: undefined,
       outputDir: undefined,
       minuteur: setTimeout(() => {
         this.interrompre(reclamee.id, 'delai');
@@ -104,16 +113,21 @@ export class Executeur {
 
     this.enCours.set(reclamee.id, suivi);
     log.log(`${reclamee.id} : ${reclamee.botId} demarre.`);
+    publier({ kind: 'status', payload: { executionId: reclamee.id, status: 'running' } });
 
     let denouement: Denouement;
 
     try {
-      denouement = await this.derouler(reclamee, journal, progression, suivi);
+      denouement = await this.derouler(reclamee, journal, progression, suivi, publier);
     } catch (erreur: unknown) {
       denouement = this.denouementDErreur(erreur, suivi, demarre, env.WORKER_RUN_TIMEOUT_SECONDS);
     } finally {
       clearTimeout(suivi.minuteur);
       this.enCours.delete(reclamee.id);
+
+      // La vue en direct avant le contexte : fermer le contexte d'abord
+      // emporterait la session CDP, et l'arret se plaindrait dans le vide.
+      if (suivi.screencast) await suivi.screencast.arreter();
 
       if (suivi.fermerContexte) {
         try {
@@ -135,6 +149,11 @@ export class Executeur {
     await progression.fermer();
     await journal.fermer();
     await this.depot.terminer(reclamee.context, reclamee.id, denouement);
+
+    // Apres l'ecriture, jamais avant : un client qui recoit l'etat terminal
+    // redemande le detail dans la foulee, et le trouverait encore « en cours ».
+    publier({ kind: 'status', payload: { executionId: reclamee.id, status: denouement.status } });
+    this.diffusion.oublierRegard(reclamee.id);
 
     log.log(
       `${reclamee.id} : ${denouement.status} en ${String(Math.round(denouement.durationMs / 1000))} s.`,
@@ -215,6 +234,7 @@ export class Executeur {
     journal: Journal,
     progression: Progression,
     suivi: EnCours,
+    publier: (evenement: Parameters<Diffusion['publier']>[1]) => void,
   ): Promise<Denouement> {
     const env = loadEnv();
     const { bot, manifest } = await chargerBot(reclamee.botId);
@@ -261,6 +281,25 @@ export class Executeur {
     // Si l'interruption est arrivee pendant l'ouverture du navigateur, le
     // contexte vient de naitre apres l'abandon : personne ne l'aurait ferme.
     if (suivi.abandon.signal.aborted) await context.close();
+
+    // **La vue en direct ne s'ouvre que si quelqu'un regarde**, et se referme
+    // quand la derniere personne s'en va. Encoder des images que personne ne
+    // recoit prendrait du processeur sur l'execution elle-meme -- ce que faisait
+    // l'outil remplace, qui poussait une capture toutes les 800 ms a chaque
+    // session ouverte.
+    const screencast = new Screencast(page, (image) => {
+      publier({ kind: 'frame', payload: { executionId: reclamee.id, ...image } });
+    });
+
+    suivi.screencast = screencast;
+
+    const suivreLeRegard = (): void => {
+      if (this.diffusion.estRegardee(reclamee.id)) void screencast.demarrer();
+      else void screencast.arreter();
+    };
+
+    this.diffusion.surRegard(reclamee.id, suivreLeRegard);
+    suivreLeRegard();
 
     const outputDir = await this.preparerDossier(reclamee.id);
 

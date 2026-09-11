@@ -9,6 +9,7 @@ import {
 } from '@flow/contracts';
 import { loadEnv, loadEnvFiles } from './config/env.js';
 import { Depot } from './depot.js';
+import { Diffusion } from './diffusion.js';
 import { Executeur } from './executeur.js';
 import { journalDe } from './log.js';
 import { Navigateurs } from './navigateur.js';
@@ -39,7 +40,11 @@ async function bootstrap(): Promise<void> {
 
   const depot = new Depot(env.WORKER_ID);
   const navigateurs = new Navigateurs();
-  const executeur = new Executeur(depot, navigateurs);
+  const diffusion = new Diffusion();
+
+  await diffusion.demarrer();
+
+  const executeur = new Executeur(depot, navigateurs, diffusion);
 
   // `maxRetriesPerRequest: null` est exige par BullMQ pour la connexion d'un
   // worker : il attend un travail par une commande bloquante, que ioredis
@@ -151,6 +156,7 @@ async function bootstrap(): Promise<void> {
         await worker.close();
         await executeur.abandonnerTout();
         await navigateurs.fermerTout();
+        await diffusion.fermer();
         await abonne.unsubscribe(CANAL_ANNULATION);
         abonne.disconnect();
         await depot.fermer();

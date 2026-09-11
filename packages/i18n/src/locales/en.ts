@@ -237,6 +237,9 @@ export const en: Traductions = {
     journal: 'Log',
     journalVide: 'No log lines.',
     suivi: 'following live',
+    fluxCoupe: 'Connection lost — reconnecting',
+    vueEnDirect: 'Live view',
+    vueEnDirectAide: 'Streamed by the worker’s browser, while you are watching.',
     statut: {
       queued: 'Queued',
       running: 'Running',

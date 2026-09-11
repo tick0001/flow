@@ -1,9 +1,12 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { Redis } from 'ioredis';
+import { canalExecution, type ExecutionEvent } from '@flow/contracts';
 import { sql } from '@flow/db';
 import { loadEnv } from '../config/env.js';
 import { Depot } from '../depot.js';
+import { Diffusion } from '../diffusion.js';
 import { Executeur } from '../executeur.js';
 import { Navigateurs } from '../navigateur.js';
 import { createFixture, SCHEMA_URL, type Fixture } from './fixtures.js';
@@ -92,6 +95,7 @@ describe("Cycle de vie d'une execution", () => {
   let fixture: Fixture;
   let depot: Depot;
   let navigateurs: Navigateurs;
+  let diffusion: Diffusion;
   let executeur: Executeur;
   let botReussi: string;
   let botSuspendu: string;
@@ -111,11 +115,14 @@ describe("Cycle de vie d'une execution", () => {
 
     depot = new Depot(loadEnv().WORKER_ID);
     navigateurs = new Navigateurs();
-    executeur = new Executeur(depot, navigateurs);
+    diffusion = new Diffusion();
+    await diffusion.demarrer();
+    executeur = new Executeur(depot, navigateurs, diffusion);
   }, 120_000);
 
   afterAll(async () => {
     await navigateurs.fermerTout();
+    await diffusion.fermer();
     await depot.fermer();
     await fixture.cleanup();
   }, 60_000);
@@ -153,6 +160,69 @@ describe("Cycle de vie d'une execution", () => {
     expect(journal[0]?.message).toContain('reussi');
     expect(journal[1]?.message).toContain('Navigation');
   });
+
+  it('diffuse ce qui est deja en base, et rien avant', async () => {
+    // Le critere du jalon tient dans ce test. On ecoute le canal de l'execution
+    // comme le ferait l'API, et l'on verifie deux choses : que tout ce qui
+    // compte est diffuse, et que **chaque ligne diffusee est deja lisible en
+    // base au moment ou elle arrive**.
+    //
+    // Ce second point n'est pas un detail de mise en oeuvre : une ligne diffusee
+    // avant d'etre persistee disparaitrait pour de bon si le worker mourait
+    // entre les deux, puisqu'un client qui se reconnecte redemande a la base
+    // « ce qui suit le rang n ».
+    const id = await fixture.mettreEnAttente(botReussi, {
+      url: 'data:text/html,<title>Diffuse</title>',
+    });
+
+    const espion = new Redis(loadEnv().REDIS_URL);
+    const recus: ExecutionEvent[] = [];
+    const dejaEnBase: boolean[] = [];
+
+    await espion.subscribe(canalExecution(id));
+
+    const lu = new Promise<void>((resoudre) => {
+      espion.on('message', (_canal: string, contenu: string) => {
+        const evenement = JSON.parse(contenu) as ExecutionEvent;
+
+        recus.push(evenement);
+
+        if (evenement.kind === 'log') {
+          const rang = evenement.payload.seq;
+
+          void fixture.journalDe(id).then((journal) => {
+            dejaEnBase.push(journal.some((ligne) => ligne.seq === rang));
+          });
+        }
+
+        if (evenement.kind === 'status' && evenement.payload.status === 'succeeded') resoudre();
+      });
+    });
+
+    await executeur.executer({ executionId: id, botId: botReussi });
+    await lu;
+    // Les verifications en base declenchees a la reception sont asynchrones.
+    await new Promise((resoudre) => setTimeout(resoudre, 300));
+    await espion.unsubscribe(canalExecution(id));
+    espion.disconnect();
+
+    const genres = recus.map((evenement) => evenement.kind);
+
+    expect(genres).toContain('status');
+    expect(genres).toContain('log');
+    expect(genres).toContain('progress');
+
+    // L'etat de depart et l'etat d'arrivee, dans cet ordre.
+    const etats = recus
+      .filter((evenement) => evenement.kind === 'status')
+      .map((evenement) => evenement.payload.status);
+
+    expect(etats).toEqual(['running', 'succeeded']);
+
+    // L'invariant : rien de diffuse qui ne soit deja en base.
+    expect(dejaEnBase.length).toBeGreaterThan(0);
+    expect(dejaEnBase.every(Boolean)).toBe(true);
+  }, 60_000);
 
   it('ne reclame pas deux fois la meme execution', async () => {
     // Le garde-fou qui empeche un bot de tourner deux fois parce qu'une machine a
