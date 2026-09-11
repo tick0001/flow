@@ -57,6 +57,20 @@
       "when": 1789141646328,
       "tag": "0007_rls_des_planifications",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789154950822,
+      "tag": "0008_plugins",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789154951822,
+      "tag": "0009_rls_des_plugins",
+      "breakpoints": true
     }
   ]
 }
