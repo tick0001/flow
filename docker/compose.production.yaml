@@ -61,7 +61,7 @@ services:
   # migrations autant de fois qu'il y a d'instances, en meme temps. Deux
   # `CREATE TABLE` concurrents ne produisent pas une erreur claire.
   migrations:
-    image: ${FLOW_IMAGE_MIGRATIONS:-ghcr.io/tick-and/flow-migrations:latest}
+    image: ${FLOW_IMAGE_MIGRATIONS:-ghcr.io/tick0001/flow-migrations:latest}
     restart: 'no'
     depends_on:
       postgres:
@@ -70,7 +70,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL est obligatoire}
 
   api:
-    image: ${FLOW_IMAGE_API:-ghcr.io/tick-and/flow-api:latest}
+    image: ${FLOW_IMAGE_API:-ghcr.io/tick0001/flow-api:latest}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -125,7 +125,7 @@ services:
       retries: 5
 
   worker:
-    image: ${FLOW_IMAGE_WORKER:-ghcr.io/tick-and/flow-worker:latest}
+    image: ${FLOW_IMAGE_WORKER:-ghcr.io/tick0001/flow-worker:latest}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -158,7 +158,7 @@ services:
     shm_size: 1gb
 
   web:
-    image: ${FLOW_IMAGE_WEB:-ghcr.io/tick-and/flow-web:latest}
+    image: ${FLOW_IMAGE_WEB:-ghcr.io/tick0001/flow-web:latest}
     restart: unless-stopped
     depends_on:
       api:

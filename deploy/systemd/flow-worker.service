@@ -10,7 +10,7 @@
 
 [Unit]
 Description=Flow& - Worker
-Documentation=https://github.com/tick-and/flow
+Documentation=https://github.com/tick0001/flow
 After=network-online.target postgresql.service redis-server.service
 Wants=network-online.target
 

@@ -30,8 +30,8 @@ n'explique pourquoi.
 
 ```bash
 sudo mkdir -p /opt/flow && cd /opt/flow
-sudo curl -fsSLO https://raw.githubusercontent.com/tick-and/flow/main/docker/compose.production.yaml
-sudo curl -fsSL -o .env https://raw.githubusercontent.com/tick-and/flow/main/docker/production.env.example
+sudo curl -fsSLO https://raw.githubusercontent.com/tick0001/flow/main/docker/compose.production.yaml
+sudo curl -fsSL -o .env https://raw.githubusercontent.com/tick0001/flow/main/docker/production.env.example
 ```
 
 ### 2.2 Remplir `.env`
@@ -149,7 +149,7 @@ sudo mkdir -p /opt/flow /var/lib/flow
 sudo chown -R flow:flow /opt/flow /var/lib/flow
 
 # Le code, construit sur la machine ou ailleurs puis copié.
-sudo -u flow git clone https://github.com/tick-and/flow.git /opt/flow
+sudo -u flow git clone https://github.com/tick0001/flow.git /opt/flow
 cd /opt/flow
 sudo -u flow pnpm install --frozen-lockfile
 sudo -u flow pnpm build

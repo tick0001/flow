@@ -8,7 +8,7 @@
 
 [Unit]
 Description=Flow& - API
-Documentation=https://github.com/tick-and/flow
+Documentation=https://github.com/tick0001/flow
 # `Wants` et non `Requires` : l'API demarre meme si la base tarde, et se
 # reconnecte. `Requires` la ferait s'arreter avec PostgreSQL, ce qui
 # transformerait un redemarrage de la base en incident manuel.
