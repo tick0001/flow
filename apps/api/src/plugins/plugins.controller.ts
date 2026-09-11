@@ -4,10 +4,12 @@ import { resolve, sep } from 'node:path';
 import {
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -15,9 +17,13 @@ import type { Response } from 'express';
 import { pluginSlotSchema, type PluginAsset, type PluginSummary } from '@flow/contracts';
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard.js';
 import { RequireRight, RightsGuard } from '../auth/guards/rights.guard.js';
+import { RightsService } from '../auth/rights.service.js';
+import { DatabaseService } from '../database/database.service.js';
+import { requireContext } from '../common/request-context.js';
+import { contextePour } from './contexte.js';
 import { PluginRegistryService } from './registre.service.js';
 import { PluginInstallerService } from './installateur.service.js';
-import { PluginHostService } from './hote.service.js';
+import { PluginHostService, objetDuDroit } from './hote.service.js';
 
 @Controller('plugins')
 @UseGuards(AuthenticatedGuard, RightsGuard)
@@ -26,6 +32,8 @@ export class PluginsController {
     private readonly registre: PluginRegistryService,
     private readonly installateur: PluginInstallerService,
     private readonly hote: PluginHostService,
+    private readonly droits: RightsService,
+    private readonly db: DatabaseService,
   ) {}
 
   /**
@@ -72,6 +80,7 @@ export class PluginsController {
         hooks: manifeste?.hooks ?? [],
         events: manifeste?.events ?? [],
         surfaces: manifeste?.surfaces ?? [],
+        views: manifeste?.views ?? [],
         tasks: manifeste?.tasks ?? [],
       });
     }
@@ -93,6 +102,7 @@ export class PluginsController {
         hooks: [],
         events: [],
         surfaces: [],
+        views: [],
         tasks: [],
       });
     }
@@ -163,6 +173,48 @@ export class PluginsController {
     reponse.setHeader('Cache-Control', 'no-store');
 
     createReadStream(fichier).pipe(reponse);
+  }
+
+  /**
+   * Appelle une vue d'un plugin.
+   *
+   * C'est la voie par laquelle l'encart d'un plugin lit ses propres tables : le
+   * coeur ne sait pas les lire, et le navigateur ne parle pas a PostgreSQL.
+   *
+   * La vue s'execute **sous le contexte de l'appelant**, comme un hook : les
+   * politiques du plugin s'appliquent, et deux personnes de deux branches n'y
+   * voient pas la meme chose. Le droit, lui, est verifie ici plutot que par le
+   * decorateur : il est nomme par le manifeste, pas connu a la compilation.
+   */
+  @Get(':id/vues/:nom')
+  async vue(
+    @Param('id') id: string,
+    @Param('nom') nom: string,
+    @Query() parametres: Record<string, string>,
+  ): Promise<unknown> {
+    const charge = this.hote.get(id);
+
+    if (!charge) throw new NotFoundException('Plugin inactif ou inconnu.');
+
+    const declaree = charge.manifest.views.find((candidate) => candidate.name === nom);
+    const fonction = charge.instance.views?.find((candidate) => candidate.name === nom)?.run;
+
+    if (!declaree || !fonction) throw new NotFoundException('Vue inconnue.');
+
+    if (declaree.right !== undefined) {
+      const [objet, action] = declaree.right.split(':');
+      const contexte = requireContext();
+      const autorise =
+        objet !== undefined &&
+        action !== undefined &&
+        (await this.droits.can(contexte.profileId, objetDuDroit(id, objet), action));
+
+      if (!autorise) {
+        throw new ForbiddenException(`Droit manquant : ${id}.${declaree.right}`);
+      }
+    }
+
+    return fonction(contextePour(this.db, id, charge.schema, requireContext()), parametres);
   }
 
   /** Relit le dossier : un plugin depose apparait sans redemarrage. */

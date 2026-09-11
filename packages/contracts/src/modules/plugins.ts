@@ -95,6 +95,41 @@ export type PluginHook = z.infer<typeof pluginHookSchema>;
 export const pluginEventSchema = z.enum(['execution.lancee', 'execution.terminee']);
 export type PluginEvent = z.infer<typeof pluginEventSchema>;
 
+/**
+ * Une vue : une lecture nommee, que l'interface du plugin appelle.
+ *
+ * **Sans elle, un emplacement d'interface ne saurait rien afficher d'autre que
+ * du texte mort.** Le plugin a ses propres tables ; le coeur ne sait pas les
+ * lire, et le navigateur ne parle pas a PostgreSQL. Il fallait donc une voie,
+ * et c'est la plus etroite qui suffise : une lecture, par son nom, sous le
+ * contexte de l'appelant.
+ *
+ * Pas de routes libres, pas de verbes d'ecriture. Un plugin qui doit ecrire le
+ * fait depuis un hook, un evenement ou une tache -- des endroits ou l'on sait
+ * quand et pourquoi il ecrit. Une route d'ecriture ouverte a l'interface aurait
+ * demande, elle, tout un dispositif de validation et de journalisation que ce
+ * jalon n'a pas.
+ */
+export const pluginViewSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .max(48)
+    .regex(/^[a-z0-9-]+$/, 'minuscules, chiffres et tirets'),
+  /**
+   * Droit exige, sous la forme `objet:action` telle que le plugin l'a declaree.
+   *
+   * Facultatif : une vue sans droit est ouverte a toute personne connectee. Le
+   * plugin doit donc y penser -- d'ou sa place dans le manifeste, visible a
+   * l'ecran d'administration, plutot qu'enfouie dans son code.
+   */
+  right: z
+    .string()
+    .regex(/^[a-z0-9-]+:[a-z0-9-]+$/, 'forme attendue : objet:action')
+    .optional(),
+});
+export type PluginView = z.infer<typeof pluginViewSchema>;
+
 /** Une tache de fond declaree par un plugin. */
 export const pluginTaskSchema = z.object({
   id: z
@@ -152,6 +187,7 @@ export const pluginManifestSchema = z.object({
   hooks: z.array(pluginHookSchema).max(16).default([]),
   events: z.array(pluginEventSchema).max(16).default([]),
   surfaces: z.array(pluginSurfaceSchema).max(16).default([]),
+  views: z.array(pluginViewSchema).max(16).default([]),
   tasks: z.array(pluginTaskSchema).max(8).default([]),
 });
 export type PluginManifest = z.infer<typeof pluginManifestSchema>;
@@ -186,6 +222,7 @@ export const pluginSummarySchema = z.object({
   hooks: z.array(pluginHookSchema),
   events: z.array(pluginEventSchema),
   surfaces: z.array(pluginSurfaceSchema),
+  views: z.array(pluginViewSchema),
   tasks: z.array(pluginTaskSchema),
 });
 export type PluginSummary = z.infer<typeof pluginSummarySchema>;

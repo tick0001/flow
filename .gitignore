@@ -15,6 +15,10 @@ storage/
 # un fichier a reconstruire a chaque route ajoutee, et un conflit de fusion a
 # chaque fois que deux personnes en ajoutent une.
 openapi.json
+# Manifeste d'un plugin : produit a la construction par `flow-plugin`, a partir
+# du module construit. Le suivre ferait un fichier a regenerer a chaque droit
+# ajoute, et deux sources pour une seule declaration.
+flow.plugin.json
 # Sorties des executions, en attendant le stockage de fichiers du jalon J5.
 donnees/
 # Bots ecrits par les tests du worker : ils vivent sous `apps/worker` pour que

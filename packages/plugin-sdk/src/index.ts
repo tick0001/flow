@@ -115,6 +115,20 @@ export interface EvenementsDuPlugin {
     | undefined;
 }
 
+/**
+ * Une vue : une lecture nommee, appelee par l'interface du plugin.
+ *
+ * Le resultat part en JSON tel quel. Il traverse le reseau : y mettre une date
+ * la rendra en chaine de caracteres a l'arrivee, comme partout ailleurs dans
+ * cette application.
+ */
+export interface VueDuPlugin {
+  name: string;
+  /** Droit exige, sous la forme `objet:action` telle que le plugin l'a declaree. */
+  right?: string | undefined;
+  run: (contexte: ContextePlugin, parametres: Record<string, string>) => Promise<unknown> | unknown;
+}
+
 /** Une tache de fond : sa periode, et ce qu'elle fait. */
 export interface TacheDuPlugin {
   id: string;
@@ -146,6 +160,7 @@ export interface DefinitionPlugin {
 
   rights?: PluginRight[] | undefined;
   surfaces?: PluginSurface[] | undefined;
+  views?: VueDuPlugin[] | undefined;
   tasks?: TacheDuPlugin[] | undefined;
   hooks?: HooksDuPlugin | undefined;
   events?: EvenementsDuPlugin | undefined;
@@ -202,6 +217,10 @@ export function toManifest(plugin: Plugin, module: string): PluginManifest {
     hooks,
     events,
     surfaces: plugin.surfaces ?? [],
+    views: (plugin.views ?? []).map((vue) => ({
+      name: vue.name,
+      ...(vue.right === undefined ? {} : { right: vue.right }),
+    })),
     tasks: (plugin.tasks ?? []).map((tache) => ({
       id: tache.id,
       intervalSeconds: tache.intervalSeconds,
