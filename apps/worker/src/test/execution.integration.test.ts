@@ -206,9 +206,15 @@ describe("Cycle de vie d'une execution", () => {
     // navigateur, le signal d'abandon seul ne ferait rien : le bot resterait
     // suspendu jusqu'au delai d'attente de Playwright -- deux minutes ici -- puis
     // se terminerait `cancelled` tout de meme. Le test passerait, en mentant sur
-    // ce qu'il verifie. Cinq secondes laissent de la marge a une machine chargee
-    // et restent a deux ordres de grandeur du comportement sans fermeture.
-    expect(ecoule).toBeLessThan(5000);
+    // ce qu'il verifie.
+    //
+    // Quinze secondes et non cinq : l'interruption prend une fraction de seconde
+    // sur une machine au repos, mais l'integration continue fait tourner sept
+    // paquets de tests et plusieurs Chromium a la fois. Une assertion serree y
+    // echouerait par intermittence, ce qui est pire qu'une assertion large --
+    // on finit par relancer sans lire. La marge reste de huit fois le
+    // comportement sans fermeture, qui est ce qu'on veut distinguer.
+    expect(ecoule).toBeLessThan(15_000);
 
     // Le dossier de sortie est range meme quand le bot leve. Sans cela, chaque
     // execution interrompue ou en echec laisserait un dossier vide -- pour
