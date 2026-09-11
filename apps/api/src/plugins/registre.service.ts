@@ -9,7 +9,7 @@ import { appRoot, loadEnv } from '../config/env.js';
  *
  * Reprise du SDK plutot qu'importee -- comme celle des bots -- pour que l'API ne
  * depende pas du paquet au chargement. Un test verifie que les deux valeurs
- * n'ont pas divergé.
+ * n'ont pas diverge.
  */
 export const SDK_MAJOR_SERVI = 1;
 
