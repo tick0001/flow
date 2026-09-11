@@ -6,7 +6,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsup && flow-plugin manifeste dist/index.js",
+    "build": "tsup && node node_modules/@flow/plugin-sdk/dist/cli.js manifeste dist/index.js",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

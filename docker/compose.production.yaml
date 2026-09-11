@@ -1,0 +1,182 @@
+name: flow
+
+# La pile de production.
+#
+# Cinq services et un travail ponctuel : PostgreSQL, Redis, les migrations,
+# l'API, le worker, l'interface. Rien d'autre n'est necessaire pour faire
+# tourner Flow& -- et rien de moins ne suffit.
+#
+# **Ce fichier ne contient aucun secret et aucune valeur par defaut
+# dangereuse.** Les variables sans valeur ici sont lues dans un fichier `.env`
+# pose a cote, que le guide d'installation fait ecrire. Une valeur par defaut
+# pour `SESSION_SECRET` ou pour le mot de passe de la base serait la meme sur
+# toutes les installations du monde, et la plupart ne la changeraient jamais.
+#
+#     docker compose -f docker/compose.production.yaml up -d
+#
+# **Aucun `container_name` n'est fige**, a la difference de la pile de
+# developpement : un nom fixe interdit `docker compose up --scale worker=3`,
+# qui est precisement ce qu'on veut faire le jour ou les executions
+# s'accumulent. Compose nomme alors `flow-worker-1`, `flow-worker-2`.
+#
+# Voir docs/23-installation.md.
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    command: ['postgres', '-c', 'random_page_cost=1.1']
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER est obligatoire}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD est obligatoire}
+      POSTGRES_DB: ${POSTGRES_DB:-flow}
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    # **Pas de port publie.** La base n'a aucune raison d'etre joignable depuis
+    # l'exterieur : les services qui en ont besoin sont sur le meme reseau. La
+    # publier serait le raccourci qui finit par etre le point d'entree.
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-flow}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Travail ponctuel : il migre et il sort. L'API et le worker attendent qu'il
+  # se soit termine **avec succes**.
+  #
+  # Migrer depuis l'API aurait semble plus simple, et aurait fait jouer les
+  # migrations autant de fois qu'il y a d'instances, en meme temps. Deux
+  # `CREATE TABLE` concurrents ne produisent pas une erreur claire.
+  migrations:
+    image: ${FLOW_IMAGE_MIGRATIONS:-ghcr.io/tick-and/flow-migrations:latest}
+    restart: 'no'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL est obligatoire}
+
+  api:
+    image: ${FLOW_IMAGE_API:-ghcr.io/tick-and/flow-api:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      API_PORT: 3100
+      API_URL: ${API_URL:?API_URL est obligatoire}
+      WEB_URL: ${WEB_URL:?WEB_URL est obligatoire}
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_APP_URL: ${DATABASE_APP_URL:?DATABASE_APP_URL est obligatoire}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET est obligatoire}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY est obligatoire}
+      # Vrai des que l'installation est derriere HTTPS -- ce qui devrait etre
+      # toujours. Le laisser faux sur une installation exposee revient a poser
+      # le cookie de session en clair sur le reseau.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      # **Dans l'arborescence de l'application**, et non dans un /donnees a
+      # part : un bot depose importe le SDK a l'execution, et Node ne le
+      # resout qu'en remontant les dossiers depuis l'endroit ou le bot se
+      # trouve. L'image pose le lien qu'il faut a la racine de chaque depot.
+      BOTS_PATH: /app/bots
+      PLUGINS_PATH: /app/plugins
+      STORAGE_PATH: /donnees/stockage
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-fr}
+      LOG_LEVEL: ${LOG_LEVEL:-log}
+    volumes:
+      # Le premier demarrage recopie dans le volume ce que l'image porte : le
+      # bot d'exemple et les plugins livres sont donc la, prets a servir.
+      - bots:/app/bots
+      - plugins:/app/plugins
+      # **Le meme volume que le worker.** Il ecrit les captures et les traces,
+      # l'API les sert. Deux volumes distincts donneraient une piece introuvable
+      # a l'affichage, sans erreur nulle part.
+      - stockage:/donnees/stockage
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3100/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  worker:
+    image: ${FLOW_IMAGE_WORKER:-ghcr.io/tick-and/flow-worker:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_APP_URL: ${DATABASE_APP_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      BOTS_PATH: /app/bots
+      STORAGE_PATH: /donnees/stockage
+      # Dossier de travail d'une execution : le bot y depose ce qu'il produit,
+      # et il est efface des la recolte faite. Hors du volume de stockage a
+      # dessein -- ce qui doit survivre y est verse, le reste n'a pas a etre
+      # sauvegarde.
+      WORKER_OUTPUT_PATH: /donnees/travail
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
+      LOG_LEVEL: ${LOG_LEVEL:-log}
+    volumes:
+      - bots:/app/bots
+      - stockage:/donnees/stockage
+    # Chromium ouvre beaucoup de processus et de descripteurs, et il n'aime pas
+    # les petits `/dev/shm` : la valeur par defaut de Docker est de 64 Mo, ce
+    # qui suffit a faire tomber un onglet sur une page riche -- avec un message
+    # qui parle de « Target crashed » et non de memoire partagee.
+    shm_size: 1gb
+
+  web:
+    image: ${FLOW_IMAGE_WEB:-ghcr.io/tick-and/flow-web:latest}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # Par defaut sur la boucle locale seulement : l'installation type met un
+      # relais TLS devant. Publier sur toutes les interfaces exposerait du HTTP
+      # en clair, et le guide le dit plutot que de le supposer.
+      - '${FLOW_WEB_BIND:-127.0.0.1}:${FLOW_WEB_PORT:-8080}:80'
+
+volumes:
+  postgres-data:
+  redis-data:
+  # Les bots et les plugins deposes par l'exploitant. Des volumes plutot que des
+  # montages depuis l'hote : ils survivent a une montee de version sans que le
+  # chemin de la machine ait a etre le meme partout.
+  bots:
+  plugins:
+  # Captures, traces et sorties de bots. C'est le volume a sauvegarder avec la
+  # base : la base seule laisserait des executions dont les pieces ont disparu.
+  stockage:

@@ -35,7 +35,7 @@
     "db:reset": "pnpm services:reset && pnpm db:migrate && pnpm db:seed",
     "navigateurs": "pnpm --filter @flow/worker exec playwright install --with-deps chromium",
     "openapi": "pnpm --filter @flow/api openapi",
-    "images": "docker build -f docker/api.Dockerfile -t flow-api:local . && docker build -f docker/worker.Dockerfile -t flow-worker:local . && docker build -f docker/web.Dockerfile -t flow-web:local ."
+    "images": "docker build -f docker/Dockerfile --target api -t flow-api:local . && docker build -f docker/Dockerfile --target worker -t flow-worker:local . && docker build -f docker/Dockerfile --target web -t flow-web:local . && docker build -f docker/Dockerfile --target migrations -t flow-migrations:local ."
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

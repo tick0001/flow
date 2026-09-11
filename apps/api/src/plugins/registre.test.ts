@@ -134,4 +134,20 @@ describe('La decouverte des plugins', () => {
 
     expect(trace).toBe('');
   });
+
+  it('ignore node_modules et les dossiers caches', async () => {
+    // `node_modules` apparait dans un dossier de depot des qu'une installation
+    // en conteneur y pose le lien qui rend le SDK resoluble. Le scanner
+    // produirait un plugin refuse, au motif exact et parfaitement inutile
+    // d'« aucun manifeste » -- affiche a l'ecran d'administration, en rouge.
+    await poser('node_modules', valide);
+    await poser('.cache', valide);
+
+    await registre.relire();
+
+    expect(registre.get('node_modules')).toBeUndefined();
+    expect(registre.get('.cache')).toBeUndefined();
+    // Le voisin legitime, lui, est toujours la.
+    expect(registre.get('bon-plugin')?.reason).toBeNull();
+  });
 });

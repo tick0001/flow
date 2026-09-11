@@ -4,6 +4,20 @@ import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { botManifestSchema, type BotManifest } from '@flow/contracts';
 import { appRoot, loadEnv } from '../config/env.js';
 
+/**
+ * Ce qu'un dossier de depot peut contenir sans etre un depot.
+ *
+ * `node_modules` s'y trouve des qu'une installation en conteneur pose le lien
+ * qui rend le SDK resoluble. Le scanner produirait un depot refuse, avec un
+ * motif exact et parfaitement inutile : « aucun manifeste ». Les dossiers
+ * caches sont ecartes pour la meme raison -- `.git`, `.DS_Store`.
+ */
+const IGNORES = new Set(['node_modules']);
+
+function estUnDepot(nom: string): boolean {
+  return !nom.startsWith('.') && !IGNORES.has(nom);
+}
+
 /** Un bot decouvert, charge ou refuse. */
 export interface RegisteredBot {
   manifest: BotManifest;
@@ -79,7 +93,7 @@ export class BotRegistryService implements OnModuleInit {
 
     try {
       entrees = (await readdir(dossier, { withFileTypes: true }))
-        .filter((entree) => entree.isDirectory())
+        .filter((entree) => entree.isDirectory() && estUnDepot(entree.name))
         .map((entree) => entree.name);
     } catch {
       // Dossier absent : une installation sans aucun bot est un etat normal,

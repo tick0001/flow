@@ -16,6 +16,20 @@ export const SDK_MAJOR_SERVI = 1;
 /** Nom du manifeste, a la racine du dossier d'un plugin. */
 export const NOM_MANIFESTE = 'flow.plugin.json';
 
+/**
+ * Ce qu'un dossier de depot peut contenir sans etre un depot.
+ *
+ * `node_modules` s'y trouve des qu'une installation en conteneur pose le lien
+ * qui rend le SDK resoluble. Le scanner produirait un depot refuse, avec un
+ * motif exact et parfaitement inutile : « aucun manifeste ». Les dossiers
+ * caches sont ecartes pour la meme raison -- `.git`, `.DS_Store`.
+ */
+const IGNORES = new Set(['node_modules']);
+
+function estUnDepot(nom: string): boolean {
+  return !nom.startsWith('.') && !IGNORES.has(nom);
+}
+
 /** Un plugin trouve sur le disque : accepte, ou refuse avec son motif. */
 export interface PluginDecouvert {
   /** Identifiant : celui du manifeste, ou a defaut le nom du dossier. */
@@ -80,6 +94,8 @@ export class PluginRegistryService {
     }
 
     for (const entree of entrees.sort()) {
+      if (!estUnDepot(entree)) continue;
+
       const chemin = join(dossier, entree);
       const decouvert = await this.lire(entree, chemin);
 
