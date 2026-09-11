@@ -15,26 +15,29 @@ whose stack, conventions and visual language Flow& shares.
 
 ## Where the project stands
 
-**Milestone J3 of eleven. Bots run.** Drop a bot folder, launch it from the interface through a
-form derived from its schema, and it runs in a separate worker driving Chromium. The log fills as it
-goes, you can cancel mid-run, and restarting the API loses neither the execution nor its result.
+**Milestone J4 of eleven. Bots run, and you can watch them work.** Drop a bot folder, launch it from
+the interface through a form derived from its schema, and it runs in a separate worker driving
+Chromium. The log, the progress and the **live browser view** are pushed by the server; two screens
+open on the same execution see the same thing, and a network cut recovers without losing a line.
 
 Before it: the entity tree, PostgreSQL Row-Level Security, sessions, rights, account
-administration, both languages, and the bot SDK.
+administration, both languages, the bot SDK, and execution in a separate worker.
 
-**There is no real time yet** — the interface polls; WebSockets and the live browser view arrive at
-J4 — no deep history browsing, and no scheduling.
+**There is not yet** deep history browsing, scheduling, or API keys.
 
 What is already decided and argued lives in [`docs/`](docs/), in French:
 [functional scope](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
 [entities, rights and security](docs/03-entites-droits-securite.md),
 [bot SDK](docs/15-sdk-bots.md), [execution lifecycle](docs/16-cycle-d-execution.md),
+[real time](docs/17-temps-reel.md),
 [interface](docs/12-interface.md), [roadmap](docs/06-feuille-de-route.md).
 
 Isolation between organisations is proven by integration tests against a real PostgreSQL database:
 they all fail when pointed at the owner role, which is what makes them worth anything. Cancellation
 is proven the same way, against a real browser: the tests time out at two minutes if the browser
-context close is removed, instead of finishing in five seconds. The
+context close is removed, instead of finishing in five seconds. And the real-time broadcast is
+checked by querying the database as each line arrives — nothing is broadcast that is not already
+written. The
 [roadmap](docs/06-feuille-de-route.md) says in what order the rest arrives, and how each step is
 recognised as finished.
 
@@ -49,7 +52,7 @@ job, and hands back. A dying Chromium no longer takes the interface with it, a r
 loses an execution, and load is absorbed by adding workers.
 
 **You can see what is happening.** Timestamped log persisted as it goes, progress, and a live view
-of the browser through the CDP screencast — relayed over WebSocket to subscribers only, not pushed
+of the browser through the CDP screencast — relayed to subscribers only, not pushed
 down a permanent per-user circuit.
 
 **Multi-organisation, enforced by the database.** Entities form a tree, and isolation rests on
@@ -104,7 +107,7 @@ Continuous integration runs exactly that. A local failure is a remote failure.
 | Database           | PostgreSQL — `ltree`, `jsonb`, `tsvector`, Row-Level Security |
 | Data access        | Drizzle ORM, schema split per module                          |
 | Frontend           | React + Vite, Tailwind, TanStack Query & Table                |
-| Real time          | Redis pub/sub relayed over WebSocket, CDP screencast          |
+| Real time          | Redis pub/sub relayed over SSE, CDP screencast                |
 | Extensions         | ESM modules, versioned manifest, two SDKs on their own semver |
 | Multi-organisation | Hierarchical entities + PostgreSQL Row-Level Security         |
 | Deployment         | Self-hosted, Docker Compose, and without containers           |

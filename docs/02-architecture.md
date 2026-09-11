@@ -138,10 +138,28 @@ BotManager tenait un circuit SignalR par utilisateur et y poussait les images du
 base64, toutes les 800 ms. Cela imposait des sessions collantes, ne survivait pas à une coupure
 réseau, et faisait passer une vidéo par le canal qui portait aussi le rendu de l'interface.
 
-Ici, le worker publie logs, progression et images dans **Redis pub/sub** ; l'API relaie en WebSocket
-aux seuls clients abonnés à cette exécution. Les images viennent du **screencast CDP**
-(`Page.startScreencast`), que le navigateur produit lui-même à la cadence des changements d'écran —
-et non d'une boucle de captures qui photographie vingt fois la même page immobile.
+Ici, le worker publie logs, progression et images dans **Redis pub/sub** ; l'API relaie aux seuls
+clients abonnés à cette exécution, par des **évènements diffusés par le serveur** (SSE).
+
+Une version antérieure de ce document annonçait un WebSocket. Le choix a changé en l'écrivant, et
+pour trois raisons : le trafic est entièrement descendant, le seul geste montant — « je regarde
+celle-ci » — tenant dans l'URL ; la reprise après coupure est **dans le protocole**, le navigateur
+renvoyant de lui-même le rang du dernier évènement reçu ; et c'est une route HTTP ordinaire, si bien
+que le cookie de session, les gardes et les droits s'appliquent tels quels, là où un WebSocket
+aurait demandé une seconde voie d'authentification.
+
+Ce que cela coûte : un flux occupe une des six connexions HTTP/1.1 qu'un navigateur ouvre par
+origine — limite qui disparaît en HTTP/2, servi par n'importe quel relais inverse. Le jour où un
+geste montant apparaîtra, c'est ce jour-là qu'il faudra rouvrir la question.
+
+**Ce que le protocole ne fait pas** mérite d'être su : `EventSource` reconnecte seul, mais abandonne
+définitivement dès qu'une tentative reçoit une erreur HTTP — ce qui arrive exactement quand l'API
+redémarre. Le client rouvre donc lui-même dans ce cas, en disant où il en était.
+
+Les images viennent du **screencast CDP** (`Page.startScreencast`), que le navigateur produit
+lui-même à la cadence des changements d'écran — et non d'une boucle de captures qui photographie
+vingt fois la même page immobile. Elles ne sont encodées **que pendant qu'on regarde** : l'API
+publie le compte des lecteurs, et le répète tant qu'ils sont là.
 
 Les logs sont persistés au fil de l'eau et non accumulés en mémoire jusqu'à la fin : une exécution
 d'une heure interrompue par un incident laissait, dans BotManager, un historique vide.

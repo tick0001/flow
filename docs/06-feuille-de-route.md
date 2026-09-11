@@ -52,8 +52,12 @@ et qu'un redémarrage de l'API en cours de route ne perd ni l'exécution ni son 
 
 ## J4 — Le temps réel
 
-Journal et progression persistés au fil de l'eau, diffusion par Redis pub/sub, relais WebSocket,
-vue live du navigateur par screencast CDP.
+Journal et progression persistés au fil de l'eau, diffusion par Redis pub/sub, relais en évènements
+diffusés par le serveur, vue live du navigateur par screencast CDP.
+
+Le relais était annoncé en WebSocket ; il se fait en SSE, pour les raisons dites dans
+[l'architecture](02-architecture.md). La reprise après coupure, qui est le critère de sortie de ce
+jalon, est alors dans le protocole plutôt que dans du code à écrire des deux côtés.
 
 Se termine quand deux navigateurs ouverts sur la même exécution voient la même chose, et qu'une
 coupure réseau se rattrape sans perdre les lignes émises pendant l'absence.

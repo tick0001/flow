@@ -15,29 +15,31 @@ ITSM, dont Flow& reprend la pile technique, les conventions et l'écriture visue
 
 ## Où en est le projet
 
-**Jalon J3 sur onze. Les bots s'exécutent.** On dépose un dossier de bot, on le lance depuis
-l'interface avec un formulaire déduit de son schéma, et il tourne dans un worker séparé qui pilote
-Chromium. Le journal se remplit au fil de l'eau, on peut interrompre en cours de route, et un
-redémarrage de l'API ne perd ni l'exécution ni son résultat.
+**Jalon J4 sur onze. Les bots s'exécutent, et on les regarde travailler.** On dépose un dossier de
+bot, on le lance depuis l'interface avec un formulaire déduit de son schéma, et il tourne dans un
+worker séparé qui pilote Chromium. Le journal, la progression et la **vue en direct du navigateur**
+arrivent poussés par le serveur ; deux écrans ouverts sur la même exécution voient la même chose, et
+une coupure réseau se rattrape sans perdre une ligne.
 
 Avant lui : l'arbre des entités, le Row-Level Security de PostgreSQL, les sessions, les droits,
-l'administration des comptes, les deux langues, et le SDK de bots.
+l'administration des comptes, les deux langues, le SDK de bots et l'exécution dans un worker séparé.
 
-**Il n'y a pas encore de temps réel** — l'interface relit périodiquement, le WebSocket et la vue en
-direct du navigateur arrivent au jalon J4 — ni d'historique consultable en profondeur, ni de
-planification.
+**Il n'y a pas encore** d'historique consultable en profondeur, ni de planification, ni de clés
+d'API.
 
 Ce qui est déjà décidé et argumenté vit dans [`docs/`](docs/) :
 [périmètre](docs/01-perimetre-fonctionnel.md), [architecture](docs/02-architecture.md),
 [entités, droits et sécurité](docs/03-entites-droits-securite.md),
 [SDK de bots](docs/15-sdk-bots.md), [cycle d'une exécution](docs/16-cycle-d-execution.md),
+[temps réel](docs/17-temps-reel.md),
 [interface](docs/12-interface.md), [feuille de route](docs/06-feuille-de-route.md).
 
 Le cloisonnement entre organisations est prouvé par des tests d'intégration contre une vraie base
 PostgreSQL : ils échouent tous quand on les pointe sur le rôle propriétaire, et c'est ce qui leur
 donne une valeur. L'interruption est éprouvée de la même façon, contre un vrai navigateur : les
 tests expirent à deux minutes si l'on retire la fermeture du contexte, au lieu de finir en cinq
-secondes. La [feuille de route](docs/06-feuille-de-route.md) dit dans quel ordre la suite arrive et
+secondes. Et la diffusion temps réel est vérifiée en interrogeant la base à la réception de chaque
+ligne — rien n'est diffusé qui ne soit déjà écrit. La [feuille de route](docs/06-feuille-de-route.md) dit dans quel ordre la suite arrive et
 à quoi se reconnaît chaque étape terminée.
 
 ## Ce que ce sera
@@ -51,7 +53,7 @@ publie le travail, rend la main. Un Chromium qui meurt n'emporte plus l'interfac
 perd plus une exécution, et la charge s'encaisse en ajoutant des workers.
 
 **On voit ce qui se passe.** Journal horodaté persisté au fil de l'eau, progression, et vue en
-direct du navigateur par screencast CDP — relayée en WebSocket aux seuls abonnés, pas poussée dans
+direct du navigateur par screencast CDP — relayée aux seuls abonnés, pas poussée dans
 un circuit permanent par utilisateur.
 
 **Multi-organisation, appliqué par la base.** Les entités forment un arbre et l'isolation repose sur
@@ -107,7 +109,7 @@ L'intégration continue lance exactement cela. Un échec local est un échec dis
 | Base de données    | PostgreSQL — `ltree`, `jsonb`, `tsvector`, Row-Level Security |
 | Accès aux données  | Drizzle ORM, schéma découpé par module                        |
 | Frontend           | React + Vite, Tailwind, TanStack Query & Table                |
-| Temps réel         | Redis pub/sub relayé en WebSocket, screencast CDP             |
+| Temps réel         | Redis pub/sub relayé en SSE, screencast CDP                   |
 | Extensions         | Modules ESM, manifeste versionné, deux SDK en semver propre   |
 | Multi-organisation | Entités hiérarchiques + Row-Level Security PostgreSQL         |
 | Déploiement        | Auto-hébergé, Docker Compose, et hors conteneurs              |

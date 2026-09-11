@@ -152,10 +152,11 @@ toutes les exécutions, en permanence, sans qu'aucun journal ne dise pourquoi.
 
 ## 8. Ce que ce jalon ne fait pas
 
-**Le temps réel.** L'interface relit périodiquement : une seconde pour le journal, deux pour la
-liste, et elle s'arrête dès que tout est terminé. La diffusion par WebSocket arrive au jalon J4 — et
-le point de reprise par rang qu'utilise déjà le client est exactement ce dont elle aura besoin pour
-rattraper une coupure. Rien à jeter.
+**La liste en direct.** L'écran de détail est poussé par le serveur (voir
+[le temps réel](17-temps-reel.md)) ; la liste, elle, relit toutes les deux secondes tant qu'une de
+ses lignes bouge, et s'arrête sinon. La rendre vive demanderait un canal par périmètre d'entités, ou
+un canal global filtré — deux fois plus de mécanique pour un écran qu'on regarde rarement pendant
+qu'il change.
 
 **Le quota d'exécutions simultanées par entité.** La colonne existe depuis le jalon J1 et n'est
 encore lue par personne. La faire respecter demande une file par entité, ou un gardien qui compte
