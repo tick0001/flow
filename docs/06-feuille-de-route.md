@@ -99,10 +99,22 @@ commande qui aligne les droits d'un profil sur le catalogue après une montée d
 ## J8 — Les plugins
 
 `@flow/plugin-sdk`, manifeste versionné, droits déclarés, schéma SQL par plugin, hooks synchrones et
-événements asynchrones, emplacements d'interface, désinstallation sans trace.
+événements asynchrones, emplacements d'interface, désinstallation sans trace. Voir
+[les plugins](21-plugins.md).
 
 Se termine quand le plugin de référence exerce chaque point d'extension et tourne en test
 d'intégration permanent.
+
+Ce jalon a ajouté deux choses que l'énoncé ne nommait pas, et les deux pour la même raison — un
+point d'extension qu'on ne peut pas exercer n'en est pas un.
+
+Les **vues** : un emplacement d'interface sans voie de données ne peut afficher que du texte mort,
+le cœur ne sachant pas lire les tables du plugin. Et un **canal Redis de la vie des exécutions** :
+sans lui l'API n'apprend jamais qu'une exécution s'est terminée, et `execution.terminee` aurait été
+une promesse vide.
+
+Les sources d'authentification, annoncées comme point d'extension dans le périmètre, attendent J9
+plutôt que d'être posées ici sans implémentation qui les éprouve.
 
 ## J9 — L'annuaire et les parcours
 
