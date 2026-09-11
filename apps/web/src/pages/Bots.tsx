@@ -1,35 +1,28 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { ApiError, api } from '@/lib/api';
 import { useSession } from '@/lib/session';
-import type { BotSummary } from '@/lib/types';
+import type { BotSummary, ExecutionSummary } from '@/lib/types';
+import {
+  ChampsDeSchema,
+  nettoyerValeurs,
+  valeursInitiales,
+  type SchemaObjet,
+} from '@/components/ChampsDeSchema';
 import {
   Badge,
   Button,
   Card,
   CardBody,
   CardHeader,
+  Checkbox,
   EmptyState,
   Notice,
   PageHeader,
   SectionTitle,
 } from '@/components/ui/primitives';
-
-/**
- * Forme minimale d'un JSON Schema d'objet, telle que le SDK la produit.
- *
- * Volontairement partielle : on ne lit que ce qu'on affiche. Traiter le JSON
- * Schema dans sa generalite -- `allOf`, `$ref`, unions -- demanderait une
- * bibliotheque entiere pour un gain nul tant que les schemas viennent tous de
- * Zod par le meme chemin.
- */
-interface SchemaObjet {
-  properties?: Record<
-    string,
-    { type?: string; description?: string; default?: unknown; format?: string }
-  >;
-  required?: string[];
-}
 
 /**
  * Le catalogue des bots.
@@ -46,6 +39,9 @@ export function Bots() {
   const { t } = useTranslation();
   const { droit } = useSession();
   const queryClient = useQueryClient();
+  // Un seul formulaire ouvert a la fois. Les ouvrir tous ferait d'un catalogue de
+  // vingt bots un mur de champs qu'on ne parcourt plus.
+  const [ouvert, setOuvert] = useState<string | null>(null);
 
   const { data: bots, isPending } = useQuery({
     queryKey: ['bots'],
@@ -87,64 +83,198 @@ export function Bots() {
       )}
 
       <div className="space-y-3">
-        {(bots ?? []).map((bot) => (
-          <Card key={bot.manifest.id}>
-            <CardHeader
-              title={
-                <span className="flex flex-wrap items-center gap-2">
-                  <span>{bot.manifest.name}</span>
-                  <Badge>v{bot.manifest.version}</Badge>
-                  {bot.manifest.tags.map((etiquette) => (
-                    <Badge key={etiquette} ton="info">
-                      {etiquette}
-                    </Badge>
-                  ))}
-                  {!bot.loaded && <Badge ton="critique">{t('bots.refuse')}</Badge>}
-                </span>
-              }
-              action={
-                bot.canExecute && (
-                  // Desactive tant que le lancement n'existe pas : un bouton qui
-                  // ne fait rien est pire qu'un bouton absent, alors qu'un bouton
-                  // eteint avec son motif annonce ce qui vient.
-                  <Button variante="primaire" taille="sm" disabled title={t('bots.lancerBientot')}>
-                    {t('bots.lancer')}
-                  </Button>
-                )
-              }
-            />
+        {(bots ?? []).map((bot) => {
+          const schema = bot.manifest.parameters as SchemaObjet;
+          const enLancement = ouvert === bot.manifest.id;
 
-            <CardBody className="space-y-4">
-              {bot.loadError && <Notice ton="critique">{bot.loadError}</Notice>}
+          return (
+            <Card key={bot.manifest.id}>
+              <CardHeader
+                title={
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span>{bot.manifest.name}</span>
+                    <Badge>v{bot.manifest.version}</Badge>
+                    {bot.manifest.tags.map((etiquette) => (
+                      <Badge key={etiquette} ton="info">
+                        {etiquette}
+                      </Badge>
+                    ))}
+                    {!bot.loaded && <Badge ton="critique">{t('bots.refuse')}</Badge>}
+                  </span>
+                }
+                action={
+                  <span className="flex items-center gap-3">
+                    <Link
+                      to={`/executions?bot=${encodeURIComponent(bot.manifest.id)}`}
+                      className="text-muted text-xs hover:underline"
+                    >
+                      {t('bots.sesExecutions')}
+                    </Link>
+                    {bot.canExecute && (
+                      <Button
+                        variante={enLancement ? 'secondaire' : 'primaire'}
+                        taille="sm"
+                        onClick={() => {
+                          setOuvert(enLancement ? null : bot.manifest.id);
+                        }}
+                      >
+                        {enLancement ? t('commun.annuler') : t('bots.lancer')}
+                      </Button>
+                    )}
+                  </span>
+                }
+              />
 
-              {bot.manifest.description && (
-                <p className="text-muted text-sm">{bot.manifest.description}</p>
-              )}
+              <CardBody className="space-y-4">
+                {bot.loadError && <Notice ton="critique">{bot.loadError}</Notice>}
 
-              <p className="text-faint font-mono text-xs">
-                {bot.manifest.id}
-                {bot.manifest.author && ` · ${t('bots.par')} ${bot.manifest.author}`}
-              </p>
+                {bot.manifest.description && (
+                  <p className="text-muted text-sm">{bot.manifest.description}</p>
+                )}
 
-              <div className="space-y-2">
-                <SectionTitle>{t('bots.parametres')}</SectionTitle>
-                <Parametres schema={bot.manifest.parameters as SchemaObjet} />
-              </div>
-            </CardBody>
-          </Card>
-        ))}
+                <p className="text-faint font-mono text-xs">
+                  {bot.manifest.id}
+                  {bot.manifest.author && ` · ${t('bots.par')} ${bot.manifest.author}`}
+                </p>
+
+                {enLancement ? (
+                  <Lancement
+                    botId={bot.manifest.id}
+                    schema={schema}
+                    onFini={() => {
+                      setOuvert(null);
+                    }}
+                  />
+                ) : (
+                  <div className="space-y-2">
+                    <SectionTitle>{t('bots.parametres')}</SectionTitle>
+                    <Parametres schema={schema} />
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 /**
+ * Le formulaire de lancement, rendu depuis le schema du bot.
+ *
+ * Les champs viennent du **meme** schema que le serveur valide : ce qu'on voit ici
+ * est exactement ce qui sera demande, et ce qui sera verifie. Les messages du
+ * serveur reviennent par champ, sous le controle qui les a causes.
+ */
+function Lancement({
+  botId,
+  schema,
+  onFini,
+}: {
+  botId: string;
+  schema: SchemaObjet;
+  onFini: () => void;
+}) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => valeursInitiales(schema));
+  const [avecFenetre, setAvecFenetre] = useState(false);
+  const [erreurs, setErreurs] = useState<Record<string, string>>({});
+  const [refus, setRefus] = useState<string | null>(null);
+
+  const lancement = useMutation({
+    mutationFn: () =>
+      api.post<ExecutionSummary>('/executions', {
+        botId,
+        parameters: nettoyerValeurs(schema, valeurs),
+        headed: avecFenetre,
+      }),
+    onSuccess: async (execution) => {
+      await queryClient.invalidateQueries({ queryKey: ['executions'] });
+      onFini();
+      // Droit sur l'execution qu'on vient de lancer : c'est la qu'on veut etre,
+      // et non de retour sur un catalogue qui ne dit rien de ce qui se passe.
+      void navigate(`/executions/${execution.id}`);
+    },
+    onError: (erreur: unknown) => {
+      if (erreur instanceof ApiError && erreur.issues) {
+        setErreurs(Object.fromEntries(erreur.issues.map((souci) => [souci.chemin, souci.message])));
+        setRefus(null);
+
+        return;
+      }
+
+      // Un refus sans detail par champ : bot retire entre-temps, droit manquant,
+      // serveur muet. Il se dit en clair plutot que de laisser le formulaire
+      // semblant n'avoir rien fait.
+      setErreurs({});
+      setRefus(erreur instanceof ApiError ? erreur.message : t('commun.erreurInattendue'));
+    },
+  });
+
+  return (
+    <form
+      className="border-line bg-sunken space-y-4 border p-3"
+      onSubmit={(evenement) => {
+        evenement.preventDefault();
+        lancement.mutate();
+      }}
+    >
+      <SectionTitle>{t('bots.lancerTitre')}</SectionTitle>
+
+      {refus && <Notice ton="critique">{refus}</Notice>}
+
+      <ChampsDeSchema
+        schema={schema}
+        valeurs={valeurs}
+        erreurs={erreurs}
+        desactive={lancement.isPending}
+        onChange={(nom, valeur) => {
+          setValeurs((avant) => ({ ...avant, [nom]: valeur }));
+          // Le message du serveur disparait des qu'on touche au champ : le laisser
+          // ferait croire que la correction n'a pas ete prise.
+          setErreurs((avant) => {
+            if (!(nom in avant)) return avant;
+
+            const suite = { ...avant };
+
+            delete suite[nom];
+
+            return suite;
+          });
+        }}
+      />
+
+      <Checkbox
+        label={t('bots.avecFenetre')}
+        checked={avecFenetre}
+        disabled={lancement.isPending}
+        onChange={(evenement) => {
+          setAvecFenetre(evenement.target.checked);
+        }}
+      />
+      <p className="text-faint text-xs">{t('bots.avecFenetreAide')}</p>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" variante="primaire" disabled={lancement.isPending}>
+          {lancement.isPending ? t('bots.lancementEnCours') : t('bots.lancer')}
+        </Button>
+        <Button type="button" onClick={onFini} disabled={lancement.isPending}>
+          {t('commun.annuler')}
+        </Button>
+        <span className="text-faint text-xs">{t('bots.obligatoireAide')}</span>
+      </div>
+    </form>
+  );
+}
+
+/**
  * Les parametres, en lecture.
  *
- * Le formulaire de saisie viendra avec le lancement, au jalon J3 : il se rendra
- * depuis le meme schema, ce qui garantit que ce qu'on voit ici est bien ce qui
- * sera demande -- et que le serveur validera exactement ce que l'ecran a
- * affiche.
+ * Le catalogue reste parcourable : on voit ce qu'un bot demande sans deplier son
+ * formulaire, et sans que vingt bots fassent vingt formulaires ouverts.
  */
 function Parametres({ schema }: { schema: SchemaObjet }) {
   const { t } = useTranslation();

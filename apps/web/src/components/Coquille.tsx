@@ -15,7 +15,10 @@ import { Badge, Button, Checkbox, Marque, Select } from '@/components/ui/primiti
  * l'ecran un travail quotidien dont on n'a que faire quand on configure.
  */
 
-const LIENS = [{ to: '/bots', cle: 'navigation.bots' }] as const;
+const LIENS = [
+  { to: '/bots', cle: 'navigation.bots', droit: ['bot', 'read'] },
+  { to: '/executions', cle: 'navigation.executions', droit: ['execution', 'read'] },
+] as const;
 
 function LienBarre({ to, children }: { to: string; children: ReactNode }) {
   return (
@@ -128,11 +131,15 @@ export function Coquille() {
             <p className="text-faint px-3 pb-1 text-[11px] font-semibold tracking-wider uppercase">
               {t('navigation.travail')}
             </p>
-            {LIENS.map((lien) => (
-              <LienBarre key={lien.to} to={lien.to}>
-                {t(lien.cle)}
-              </LienBarre>
-            ))}
+            {/* Un lien n'apparait que si le droit correspondant existe : proposer
+                ce qui refusera fait cliquer pour rien. */}
+            {LIENS.filter((lien) => droit(lien.droit[0], lien.droit[1]) !== undefined).map(
+              (lien) => (
+                <LienBarre key={lien.to} to={lien.to}>
+                  {t(lien.cle)}
+                </LienBarre>
+              ),
+            )}
           </div>
 
           {/* La section n'apparait que si l'on a au moins un droit dedans :

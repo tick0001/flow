@@ -8,6 +8,8 @@ import { Connexion } from '@/pages/Connexion';
 import { Bots } from '@/pages/Bots';
 import { Comptes } from '@/pages/Comptes';
 import { Entites } from '@/pages/Entites';
+import { Execution } from '@/pages/Execution';
+import { Executions } from '@/pages/Executions';
 import { Profils } from '@/pages/Profils';
 import { MotDePasse } from '@/pages/MotDePasse';
 import { Nuancier } from '@/pages/Nuancier';
@@ -60,12 +62,14 @@ function Racine() {
     <Routes>
       <Route element={<Coquille />}>
         <Route path="/bots" element={<Bots />} />
+        <Route path="/executions" element={<Executions />} />
+        <Route path="/executions/:id" element={<Execution />} />
         <Route path="/entites" element={<Entites />} />
         <Route path="/comptes" element={<Comptes />} />
         <Route path="/profils" element={<Profils />} />
         <Route path="/nuancier" element={<Nuancier />} />
-        {/* Les executions arrivent au jalon J3. La racine mene au catalogue :
-            c'est ce qu'on ouvre en arrivant. */}
+        {/* La racine mene au catalogue : lancer est ce qu'on vient faire, et
+            l'historique se consulte apres. */}
         <Route path="*" element={<Navigate to="/bots" replace />} />
       </Route>
     </Routes>
