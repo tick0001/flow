@@ -12,6 +12,7 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "db:init": "tsc -p tsconfig.build.json && node dist/cli/initialiser.js",
+    "db:seed": "tsc -p tsconfig.build.json && node dist/cli/seed.js",
     "openapi": "tsc -p tsconfig.build.json && node dist/cli/openapi.js"
   },
   "dependencies": {
