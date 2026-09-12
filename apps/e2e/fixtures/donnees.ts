@@ -108,11 +108,18 @@ export async function poserLeDecor(): Promise<Decor> {
   // a toute la branche du decor, pour tous les profils : c'est le point de
   // depart le plus large, et les parcours qui eprouvent le cloisonnement le font
   // sur les executions, pas sur la mise a disposition.
-  await connexion.db.execute(sql`
-    INSERT INTO bot_rules (bot_id, entity_id, is_recursive, profile_id)
-    VALUES ('exemple.bonjour', ${entites.racine.id}, true, NULL)
-    ON CONFLICT DO NOTHING
-  `);
+  for (const bot of [
+    'exemple.bonjour',
+    'exemple.catalogue',
+    'exemple.connexion',
+    'exemple.epreuves',
+  ]) {
+    await connexion.db.execute(sql`
+      INSERT INTO bot_rules (bot_id, entity_id, is_recursive, profile_id)
+      VALUES (${bot}, ${entites.racine.id}, true, NULL)
+      ON CONFLICT DO NOTHING
+    `);
+  }
 
   const comptes: Decor['comptes'] = {
     patronne: await creerCompte(connexion, 'patronne', profils.tous, entites.racine.id, true),

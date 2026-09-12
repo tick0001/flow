@@ -108,8 +108,9 @@ pnpm dev              # API :3100, interface :5273, worker
 
 Puis <http://localhost:5273>. La première connexion impose un changement de mot de passe.
 
-Un bot de référence est déjà déposé dans [`bots/`](bots/exemple-bonjour) : construisez-le
-(`pnpm build`), ouvrez **Bots**, et lancez-le sur une adresse de votre choix.
+Quatre bots sont déjà déposés dans [`bots/`](bots/) : construisez-les (`pnpm build`), ouvrez
+**Bots**, et lancez-les. Aucun ne prend d'adresse — leurs paramètres sont des listes fermées, et
+`exemple-bonjour` ne sort même pas de la machine. Voir [le SDK](docs/15-sdk-bots.md).
 
 Le worker installe ses navigateurs à part, et jamais au démarrage : une application qui télécharge
 Chromium au premier lancement transforme une panne de proxy d'entreprise en application qui ne
