@@ -51,3 +51,9 @@ Thumbs.db
 apps/e2e/test-results/
 apps/e2e/playwright-report/
 apps/e2e/blob-report/
+
+# Arborescences autonomes produites par `pnpm deploy`, que le workflow
+# « Archives » fabrique. Reproduites a la main, elles font quinze mille
+# fichiers a la racine du depot.
+/deploiement-api/
+/deploiement-worker/
