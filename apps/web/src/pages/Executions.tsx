@@ -11,12 +11,16 @@ import {
   Checkbox,
   EmptyState,
   Field,
+  FilterBar,
   LinkButton,
   Notice,
   PageHeader,
   Pastille,
   Select,
   TableWrap,
+  Td,
+  Th,
+  Tr,
 } from '@/components/ui/primitives';
 
 /** Cadence de relecture tant qu'une execution de la page n'est pas terminee. */
@@ -97,7 +101,7 @@ export function Executions() {
     <div className="space-y-6">
       <PageHeader title={t('executions.titre')} description={t('executions.intro')} />
 
-      <div className="border-line bg-sunken flex flex-wrap items-end gap-4 border p-3">
+      <FilterBar>
         <Field label={t('executions.filtreStatut')} className="w-48">
           <Select
             value={statut}
@@ -135,7 +139,7 @@ export function Executions() {
             {t('executions.retirerFiltreBot', { bot: botId })}
           </Button>
         )}
-      </div>
+      </FilterBar>
 
       {error && <Notice ton="critique">{t('erreurs.serveur')}</Notice>}
       {isPending && <p className="text-muted text-sm">{t('commun.chargement')}</p>}
@@ -150,62 +154,58 @@ export function Executions() {
 
       {executions.length > 0 && (
         <TableWrap>
-          <table className="w-full text-sm">
-            <thead className="border-line text-faint border-b text-left text-[11px] tracking-wider uppercase">
-              <tr>
-                <th className="px-3 py-2 font-semibold">{t('executions.colonneStatut')}</th>
-                <th className="px-3 py-2 font-semibold">{t('executions.colonneBot')}</th>
-                <th className="px-3 py-2 font-semibold">{t('executions.colonneEntite')}</th>
-                <th className="px-3 py-2 font-semibold">{t('executions.colonneDemandeur')}</th>
-                <th className="px-3 py-2 font-semibold">{t('executions.colonneLancee')}</th>
-                <th className="px-3 py-2 text-right font-semibold">
-                  {t('executions.colonneDuree')}
-                </th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-line divide-y">
-              {executions.map((execution) => (
-                <tr key={execution.id} className="hover:bg-sunken">
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <Pastille ton={TON_DU_STATUT[execution.status]}>
-                      {t(`executions.statut.${execution.status}`)}
-                    </Pastille>
-                    {/* L'etape en cours sous le statut : c'est l'information qui
+          <thead>
+            <tr>
+              <Th>{t('executions.colonneStatut')}</Th>
+              <Th>{t('executions.colonneBot')}</Th>
+              <Th>{t('executions.colonneEntite')}</Th>
+              <Th>{t('executions.colonneDemandeur')}</Th>
+              <Th>{t('executions.colonneLancee')}</Th>
+              <Th className="text-right">{t('executions.colonneDuree')}</Th>
+              <Th />
+            </tr>
+          </thead>
+          <tbody>
+            {executions.map((execution) => (
+              <Tr key={execution.id}>
+                <Td className="whitespace-nowrap">
+                  <Pastille ton={TON_DU_STATUT[execution.status]}>
+                    {t(`executions.statut.${execution.status}`)}
+                  </Pastille>
+                  {/* L'etape en cours sous le statut : c'est l'information qui
                         change, et la seule qui distingue deux lignes « en
                         cours ». */}
-                    {execution.progress && !estTerminal(execution.status) && (
-                      <span className="text-faint mt-0.5 block text-xs">
-                        {execution.progress.step}
-                        {execution.progress.percent !== null &&
-                          ` · ${String(execution.progress.percent)} %`}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="text-ink">{execution.botName}</span>
-                    <Badge className="ml-2">v{execution.botVersion}</Badge>
-                  </td>
-                  <td className="text-muted px-3 py-2">{execution.entity.name}</td>
-                  <td className="text-muted px-3 py-2">{execution.requestedBy.displayName}</td>
-                  <td className="text-muted px-3 py-2 whitespace-nowrap">
-                    {instantLisible(execution.createdAt, i18n.language)}
-                  </td>
-                  <td className="text-muted px-3 py-2 text-right whitespace-nowrap tabular-nums">
-                    {dureeLisible(execution.durationMs)}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <Link
-                      to={`/executions/${execution.id}`}
-                      className="text-brand-ink text-xs font-medium hover:underline"
-                    >
-                      {t('executions.ouvrir')}
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  {execution.progress && !estTerminal(execution.status) && (
+                    <span className="text-faint mt-0.5 block text-xs">
+                      {execution.progress.step}
+                      {execution.progress.percent !== null &&
+                        ` · ${String(execution.progress.percent)} %`}
+                    </span>
+                  )}
+                </Td>
+                <Td>
+                  <span className="text-ink">{execution.botName}</span>
+                  <Badge className="ml-2">v{execution.botVersion}</Badge>
+                </Td>
+                <Td className="text-muted">{execution.entity.name}</Td>
+                <Td className="text-muted">{execution.requestedBy.displayName}</Td>
+                <Td className="text-muted whitespace-nowrap">
+                  {instantLisible(execution.createdAt, i18n.language)}
+                </Td>
+                <Td className="text-muted text-right whitespace-nowrap tabular-nums">
+                  {dureeLisible(execution.durationMs)}
+                </Td>
+                <Td className="text-right">
+                  <Link
+                    to={`/executions/${execution.id}`}
+                    className="text-brand-ink text-xs font-medium hover:underline"
+                  >
+                    {t('executions.ouvrir')}
+                  </Link>
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
         </TableWrap>
       )}
 

@@ -331,7 +331,10 @@ function Parametres({ schema }: { schema: SchemaObjet }) {
 function messageDeSouci(souci: SouciDeChamp, t: TFunction): string {
   if (!souci.code) return souci.message;
 
-  const clef = `contraintes.${souci.code}`;
+  // La clef est batie a l'execution : le cast la ramene a une clef concrete du
+  // meme prefixe, ce qui garde la verification du prefixe sans exiger de tenir
+  // la liste des codes a deux endroits.
+  const clef = `contraintes.${souci.code}` as 'contraintes.required';
   // i18next rend la clef elle-meme quand elle n'existe pas : c'est ce qui permet
   // de retomber sur le texte du serveur sans avoir a tenir la liste des
   // contraintes connues a deux endroits.

@@ -77,6 +77,9 @@ export const en: Traductions = {
     reglages: 'Settings',
     retour: 'Back',
     ouvrirMenu: 'Open menu',
+    fermerMenu: 'Close menu',
+    langue: 'Language',
+    reglagesIntro: 'What applies to the whole installation.',
   },
   entites: {
     titre: 'Entities',

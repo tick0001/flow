@@ -76,6 +76,9 @@ export const fr = {
     reglages: 'Réglages',
     retour: 'Retour',
     ouvrirMenu: 'Ouvrir le menu',
+    fermerMenu: 'Fermer le menu',
+    langue: 'Langue',
+    reglagesIntro: 'Ce qui vaut pour toute l’installation.',
   },
   entites: {
     titre: 'Entités',

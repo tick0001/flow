@@ -27,6 +27,9 @@ import {
   SectionTitle,
   Select,
   TableWrap,
+  Td,
+  Th,
+  Tr,
 } from '@/components/ui/primitives';
 
 /**
@@ -120,91 +123,89 @@ export function Planifications() {
 
       {planifications && planifications.length > 0 && (
         <TableWrap>
-          <table className="w-full text-sm">
-            <thead className="border-line text-faint border-b text-left text-[11px] tracking-wider uppercase">
-              <tr>
-                <th className="px-3 py-2 font-semibold">{t('planifications.nom')}</th>
-                <th className="px-3 py-2 font-semibold">{t('planifications.bot')}</th>
-                <th className="px-3 py-2 font-semibold">{t('planifications.cadence')}</th>
-                <th className="px-3 py-2 font-semibold">{t('planifications.prochain')}</th>
-                <th className="px-3 py-2 font-semibold">{t('planifications.dernier')}</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-line divide-y">
-              {planifications.map((planification) => (
-                <tr key={planification.id} className="hover:bg-sunken">
-                  <td className="px-3 py-2">
-                    <Pastille ton={planification.isActive ? 'positif' : 'neutre'}>
-                      {planification.name}
-                    </Pastille>
-                  </td>
-                  <td className="px-3 py-2">
-                    {planification.botName ? (
-                      <span className="text-muted">{planification.botName}</span>
-                    ) : (
-                      // Un bot retire ne fait pas disparaitre la planification :
-                      // elle reste visible, et dit pourquoi elle ne tourne plus.
-                      <Badge ton="critique">{t('planifications.botRetire')}</Badge>
+          <thead>
+            <tr>
+              <Th>{t('planifications.nom')}</Th>
+              <Th>{t('planifications.bot')}</Th>
+              <Th>{t('planifications.cadence')}</Th>
+              <Th>{t('planifications.prochain')}</Th>
+              <Th>{t('planifications.dernier')}</Th>
+              <Th />
+            </tr>
+          </thead>
+          <tbody>
+            {planifications.map((planification) => (
+              <Tr key={planification.id}>
+                <Td>
+                  <Pastille ton={planification.isActive ? 'positif' : 'neutre'}>
+                    {planification.name}
+                  </Pastille>
+                </Td>
+                <Td>
+                  {planification.botName ? (
+                    <span className="text-muted">{planification.botName}</span>
+                  ) : (
+                    // Un bot retire ne fait pas disparaitre la planification :
+                    // elle reste visible, et dit pourquoi elle ne tourne plus.
+                    <Badge ton="critique">{t('planifications.botRetire')}</Badge>
+                  )}
+                </Td>
+                <Td className="text-muted font-mono text-xs">
+                  {planification.cron}
+                  <span className="text-faint block">{planification.timezone}</span>
+                </Td>
+                <Td className="text-muted whitespace-nowrap">
+                  {planification.isActive
+                    ? instantLisible(planification.nextRunAt, i18n.language)
+                    : t('planifications.inactive')}
+                </Td>
+                <Td className="text-muted whitespace-nowrap">
+                  {planification.lastRunAt
+                    ? instantLisible(planification.lastRunAt, i18n.language)
+                    : t('planifications.jamais')}
+                </Td>
+                <Td className="text-right whitespace-nowrap">
+                  <span className="flex items-center justify-end gap-3">
+                    <Link
+                      to={`/executions?planification=${planification.id}`}
+                      className="text-muted text-xs hover:underline"
+                    >
+                      {t('planifications.derniersDeclenchements')}
+                    </Link>
+                    {planification.canManage && (
+                      <>
+                        <Button
+                          taille="sm"
+                          disabled={bascule.isPending}
+                          onClick={() => {
+                            bascule.mutate({
+                              id: planification.id,
+                              isActive: !planification.isActive,
+                            });
+                          }}
+                        >
+                          {planification.isActive
+                            ? t('planifications.desactiver')
+                            : t('planifications.activer')}
+                        </Button>
+                        <Button
+                          variante="danger"
+                          taille="sm"
+                          onClick={() => {
+                            if (window.confirm(t('planifications.confirmerSuppression'))) {
+                              suppression.mutate(planification.id);
+                            }
+                          }}
+                        >
+                          {t('commun.supprimer')}
+                        </Button>
+                      </>
                     )}
-                  </td>
-                  <td className="text-muted px-3 py-2 font-mono text-xs">
-                    {planification.cron}
-                    <span className="text-faint block">{planification.timezone}</span>
-                  </td>
-                  <td className="text-muted px-3 py-2 whitespace-nowrap">
-                    {planification.isActive
-                      ? instantLisible(planification.nextRunAt, i18n.language)
-                      : t('planifications.inactive')}
-                  </td>
-                  <td className="text-muted px-3 py-2 whitespace-nowrap">
-                    {planification.lastRunAt
-                      ? instantLisible(planification.lastRunAt, i18n.language)
-                      : t('planifications.jamais')}
-                  </td>
-                  <td className="px-3 py-2 text-right whitespace-nowrap">
-                    <span className="flex items-center justify-end gap-3">
-                      <Link
-                        to={`/executions?planification=${planification.id}`}
-                        className="text-muted text-xs hover:underline"
-                      >
-                        {t('planifications.derniersDeclenchements')}
-                      </Link>
-                      {planification.canManage && (
-                        <>
-                          <Button
-                            taille="sm"
-                            disabled={bascule.isPending}
-                            onClick={() => {
-                              bascule.mutate({
-                                id: planification.id,
-                                isActive: !planification.isActive,
-                              });
-                            }}
-                          >
-                            {planification.isActive
-                              ? t('planifications.desactiver')
-                              : t('planifications.activer')}
-                          </Button>
-                          <Button
-                            variante="danger"
-                            taille="sm"
-                            onClick={() => {
-                              if (window.confirm(t('planifications.confirmerSuppression'))) {
-                                suppression.mutate(planification.id);
-                              }
-                            }}
-                          >
-                            {t('commun.supprimer')}
-                          </Button>
-                        </>
-                      )}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </span>
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
         </TableWrap>
       )}
     </div>

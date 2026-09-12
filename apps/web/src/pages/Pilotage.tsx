@@ -16,6 +16,9 @@ import {
   PageHeader,
   SectionTitle,
   TableWrap,
+  Td,
+  Th,
+  Tr,
 } from '@/components/ui/primitives';
 
 /** Fenetres proposees. Quatre boutons plutot que deux selecteurs de date. */
@@ -159,55 +162,49 @@ export function Pilotage() {
           <div className="space-y-2">
             <SectionTitle>{t('pilotage.parBot')}</SectionTitle>
             <TableWrap>
-              <table className="w-full text-sm">
-                <thead className="border-line text-faint border-b text-left text-[11px] tracking-wider uppercase">
-                  <tr>
-                    <th className="px-3 py-2 font-semibold">{t('executions.colonneBot')}</th>
-                    <th className="px-3 py-2 text-right font-semibold">{t('pilotage.total')}</th>
-                    <th className="px-3 py-2 text-right font-semibold">
-                      {t('pilotage.tauxReussite')}
-                    </th>
-                    <th className="px-3 py-2 text-right font-semibold">{t('pilotage.mediane')}</th>
-                    <th className="px-3 py-2 font-semibold">{t('pilotage.dernierEchec')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-line divide-y">
-                  {data.bots.map((bot) => (
-                    <tr key={bot.botId} className="hover:bg-sunken">
-                      <td className="px-3 py-2">
-                        <Link
-                          to={`/executions?bot=${encodeURIComponent(bot.botId)}`}
-                          className="text-ink hover:underline"
+              <thead>
+                <tr>
+                  <Th>{t('executions.colonneBot')}</Th>
+                  <Th className="text-right">{t('pilotage.total')}</Th>
+                  <Th className="text-right">{t('pilotage.tauxReussite')}</Th>
+                  <Th className="text-right">{t('pilotage.mediane')}</Th>
+                  <Th>{t('pilotage.dernierEchec')}</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.bots.map((bot) => (
+                  <Tr key={bot.botId}>
+                    <Td>
+                      <Link
+                        to={`/executions?bot=${encodeURIComponent(bot.botId)}`}
+                        className="text-ink hover:underline"
+                      >
+                        {bot.botName}
+                      </Link>
+                    </Td>
+                    <Td className="text-muted text-right tabular-nums">{bot.total}</Td>
+                    <Td className="text-right tabular-nums">
+                      {bot.tauxReussite === null ? (
+                        <span className="text-faint">—</span>
+                      ) : (
+                        <span
+                          className={bot.tauxReussite >= 0.95 ? 'text-muted' : 'text-critical-ink'}
                         >
-                          {bot.botName}
-                        </Link>
-                      </td>
-                      <td className="text-muted px-3 py-2 text-right tabular-nums">{bot.total}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {bot.tauxReussite === null ? (
-                          <span className="text-faint">—</span>
-                        ) : (
-                          <span
-                            className={
-                              bot.tauxReussite >= 0.95 ? 'text-muted' : 'text-critical-ink'
-                            }
-                          >
-                            {Math.round(bot.tauxReussite * 100)} %
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-muted px-3 py-2 text-right tabular-nums">
-                        {dureeLisible(bot.medianeMs)}
-                      </td>
-                      <td className="text-muted px-3 py-2 text-xs whitespace-nowrap">
-                        {bot.dernierEchec
-                          ? instantLisible(bot.dernierEchec, i18n.language)
-                          : t('pilotage.aucunEchecBot')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          {Math.round(bot.tauxReussite * 100)} %
+                        </span>
+                      )}
+                    </Td>
+                    <Td className="text-muted text-right tabular-nums">
+                      {dureeLisible(bot.medianeMs)}
+                    </Td>
+                    <Td className="text-muted text-xs whitespace-nowrap">
+                      {bot.dernierEchec
+                        ? instantLisible(bot.dernierEchec, i18n.language)
+                        : t('pilotage.aucunEchecBot')}
+                    </Td>
+                  </Tr>
+                ))}
+              </tbody>
             </TableWrap>
           </div>
         </>

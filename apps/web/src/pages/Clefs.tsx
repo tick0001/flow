@@ -17,6 +17,9 @@ import {
   Notice,
   PageHeader,
   TableWrap,
+  Td,
+  Th,
+  Tr,
 } from '@/components/ui/primitives';
 
 /**
@@ -79,61 +82,59 @@ export function Clefs() {
 
       {clefs && clefs.length > 0 && (
         <TableWrap>
-          <table className="w-full text-sm">
-            <thead className="border-line text-faint border-b text-left text-[11px] tracking-wider uppercase">
-              <tr>
-                <th className="px-3 py-2 font-semibold">{t('clefs.nom')}</th>
-                <th className="px-3 py-2 font-semibold">{t('clefs.perimetre')}</th>
-                <th className="px-3 py-2 font-semibold">{t('clefs.derniereUtilisation')}</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-line divide-y">
-              {clefs.map((clef) => (
-                <tr key={clef.id} className="hover:bg-sunken">
-                  <td className="px-3 py-2">
-                    <span className="text-ink">{clef.name}</span>
-                    <span className="text-faint block font-mono text-xs">{clef.prefix}…</span>
-                  </td>
-                  <td className="text-muted px-3 py-2 text-xs">
-                    {clef.entity.name} · {clef.profile.name}
-                    {clef.includeSubEntities && (
-                      <Badge ton="marque" className="ml-2">
-                        {t('session.badgeSousEntites')}
-                      </Badge>
-                    )}
-                    <span className="text-faint block">{clef.owner.displayName}</span>
-                  </td>
-                  <td className="text-muted px-3 py-2 text-xs whitespace-nowrap">
-                    {clef.lastUsedAt
-                      ? instantLisible(clef.lastUsedAt, i18n.language)
-                      : t('clefs.jamaisUtilisee')}
-                    <span className="text-faint block">
-                      {clef.expiresAt
-                        ? `${t('clefs.expire')} ${instantLisible(clef.expiresAt, i18n.language)}`
-                        : t('clefs.sansExpiration')}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {droit('apikey', 'delete') !== undefined && (
-                      <Button
-                        variante="danger"
-                        taille="sm"
-                        disabled={revocation.isPending}
-                        onClick={() => {
-                          if (window.confirm(t('clefs.confirmerRevocation'))) {
-                            revocation.mutate(clef.id);
-                          }
-                        }}
-                      >
-                        {t('clefs.revoquer')}
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <thead>
+            <tr>
+              <Th>{t('clefs.nom')}</Th>
+              <Th>{t('clefs.perimetre')}</Th>
+              <Th>{t('clefs.derniereUtilisation')}</Th>
+              <Th />
+            </tr>
+          </thead>
+          <tbody>
+            {clefs.map((clef) => (
+              <Tr key={clef.id}>
+                <Td>
+                  <span className="text-ink">{clef.name}</span>
+                  <span className="text-faint block font-mono text-xs">{clef.prefix}…</span>
+                </Td>
+                <Td className="text-muted text-xs">
+                  {clef.entity.name} · {clef.profile.name}
+                  {clef.includeSubEntities && (
+                    <Badge ton="marque" className="ml-2">
+                      {t('session.badgeSousEntites')}
+                    </Badge>
+                  )}
+                  <span className="text-faint block">{clef.owner.displayName}</span>
+                </Td>
+                <Td className="text-muted text-xs whitespace-nowrap">
+                  {clef.lastUsedAt
+                    ? instantLisible(clef.lastUsedAt, i18n.language)
+                    : t('clefs.jamaisUtilisee')}
+                  <span className="text-faint block">
+                    {clef.expiresAt
+                      ? `${t('clefs.expire')} ${instantLisible(clef.expiresAt, i18n.language)}`
+                      : t('clefs.sansExpiration')}
+                  </span>
+                </Td>
+                <Td className="text-right">
+                  {droit('apikey', 'delete') !== undefined && (
+                    <Button
+                      variante="danger"
+                      taille="sm"
+                      disabled={revocation.isPending}
+                      onClick={() => {
+                        if (window.confirm(t('clefs.confirmerRevocation'))) {
+                          revocation.mutate(clef.id);
+                        }
+                      }}
+                    >
+                      {t('clefs.revoquer')}
+                    </Button>
+                  )}
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
         </TableWrap>
       )}
     </div>

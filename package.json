@@ -31,9 +31,8 @@
     "services:down": "docker compose -f docker/compose.yaml down",
     "services:reset": "docker compose -f docker/compose.yaml down -v && pnpm services:up",
     "db:migrate": "pnpm --filter @flow/db db:migrate",
-    "db:seed": "pnpm --filter @flow/api db:seed",
-    "db:init": "pnpm --filter @flow/api db:init",
-    "db:reset": "pnpm services:reset && pnpm db:migrate && pnpm db:seed",
+        "db:init": "pnpm --filter @flow/api db:init",
+    "db:reset": "pnpm services:reset && pnpm db:migrate && pnpm db:init",
     "navigateurs": "pnpm --filter @flow/worker exec playwright install --with-deps chromium",
     "openapi": "pnpm --filter @flow/api openapi",
     "images": "docker build -f docker/Dockerfile --target api -t flow-api:local . && docker build -f docker/Dockerfile --target worker -t flow-worker:local . && docker build -f docker/Dockerfile --target web -t flow-web:local . && docker build -f docker/Dockerfile --target migrations -t flow-migrations:local ."

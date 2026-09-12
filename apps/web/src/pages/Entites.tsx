@@ -12,6 +12,9 @@ import {
   PageHeader,
   Select,
   TableWrap,
+  Td,
+  Th,
+  Tr,
 } from '@/components/ui/primitives';
 
 /**
@@ -104,27 +107,25 @@ export function Entites() {
 
       {entites && entites.length > 0 && (
         <TableWrap>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-line text-faint border-b text-left text-[11px] tracking-wider uppercase">
-                <th className="px-3 py-2 font-semibold">{t('entites.nom')}</th>
-                <th className="px-3 py-2 font-semibold">Chemin</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entites.map((entite) => (
-                <tr key={entite.id} className="border-line border-b last:border-b-0">
-                  <td className="text-ink px-3 py-2">
-                    <span style={{ paddingLeft: `${String(entite.level * 16)}px` }}>
-                      {entite.level > 0 && <span className="text-faint mr-1.5">└</span>}
-                      {entite.name}
-                    </span>
-                  </td>
-                  <td className="text-faint px-3 py-2 font-mono text-xs">{entite.path}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <thead>
+            <tr>
+              <Th>{t('entites.nom')}</Th>
+              <Th>Chemin</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {entites.map((entite) => (
+              <Tr key={entite.id}>
+                <Td className="text-ink">
+                  <span style={{ paddingLeft: `${String(entite.level * 16)}px` }}>
+                    {entite.level > 0 && <span className="text-faint mr-1.5">└</span>}
+                    {entite.name}
+                  </span>
+                </Td>
+                <Td className="font-mono text-xs">{entite.path}</Td>
+              </Tr>
+            ))}
+          </tbody>
         </TableWrap>
       )}
     </div>

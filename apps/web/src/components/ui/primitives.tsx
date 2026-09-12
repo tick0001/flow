@@ -416,6 +416,66 @@ export function EmptyState({
  */
 export function TableWrap({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={cn('border-line bg-surface overflow-x-auto border', className)}>{children}</div>
+    <div
+      className={cn(
+        'rounded-card border-line bg-surface shadow-card overflow-x-auto border',
+        className,
+      )}
+    >
+      {/* La table est **dans** l'enveloppe, et non a cote : sans cela, chaque
+          ecran rejouait `w-full text-left text-sm` de son cote, et six tableaux
+          finissaient par ne plus se ressembler tout a fait. */}
+      <table className="w-full text-left text-sm">{children}</table>
+    </div>
+  );
+}
+
+export function Th({ className, children }: { className?: string; children?: ReactNode }) {
+  return (
+    <th
+      className={cn(
+        'border-line bg-sunken text-muted border-b px-3 py-2.5 text-xs font-semibold tracking-wide uppercase',
+        className,
+      )}
+    >
+      {children}
+    </th>
+  );
+}
+
+export function Td({ className, children }: { className?: string; children?: ReactNode }) {
+  return <td className={cn('px-3 py-2.5 align-middle', className)}>{children}</td>;
+}
+
+export function Tr({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <tr
+      className={cn(
+        'border-line/70 hover:bg-sunken border-b transition-colors last:border-0',
+        className,
+      )}
+    >
+      {children}
+    </tr>
+  );
+}
+
+/**
+ * Barre de filtres.
+ *
+ * Un fond enfonce plutot qu'une carte : ce n'est pas du contenu, c'est ce qui
+ * decide de ce qu'on voit en dessous. La distinction se perd des qu'elle est
+ * posee sur la meme surface que le tableau.
+ */
+export function FilterBar({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <div
+      className={cn(
+        'border-line bg-sunken flex flex-wrap items-end gap-x-3 gap-y-2 border px-3 py-2.5',
+        className,
+      )}
+    >
+      {children}
+    </div>
   );
 }

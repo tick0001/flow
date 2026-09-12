@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, api } from '@/lib/api';
@@ -194,8 +195,10 @@ export function Profils() {
                 <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                   {profil.rights.map((regle: ProfileRight) => (
                     <li key={clef(regle.object, regle.action)} className="text-muted">
-                      {t(`droits.${regle.object}.${regle.action}`)}{' '}
-                      <span className="text-faint">· {t(`droits.portees.${regle.scope}`)}</span>
+                      {t(`droits.${regle.object}.${regle.action}` as 'droits.entity.read')}{' '}
+                      <span className="text-faint">
+                        · {t(`droits.portees.${regle.scope}` as 'droits.portees.all')}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -359,12 +362,11 @@ function Editeur({
  * quand il est la -- sans quoi la matrice afficherait la clef brute, ce
  * qu'i18next rend faute de mieux.
  */
-function libelle(
-  definition: RightDefinition,
-  langue: 'fr' | 'en',
-  t: (clef: string) => string,
-): string {
-  return definition.label?.[langue] ?? t(definition.labelKey);
+function libelle(definition: RightDefinition, langue: 'fr' | 'en', t: TFunction): string {
+  // `labelKey` vient du catalogue, que les plugins alimentent : aucune liste
+  // fermee ne peut la couvrir. Un plugin porte son propre `label`, et n'atteint
+  // donc jamais cette branche.
+  return definition.label?.[langue] ?? t(definition.labelKey as 'droits.entity.read');
 }
 
 /** Le libelle d'un groupe : le nom du plugin, ou la clef du coeur. */
@@ -372,7 +374,9 @@ function libelleDuGroupe(
   objet: string,
   definitions: RightDefinition[],
   langue: 'fr' | 'en',
-  t: (clef: string) => string,
+  t: TFunction,
 ): string {
-  return definitions[0]?.groupLabel?.[langue] ?? t(`droits.objets.${objet}`);
+  return (
+    definitions[0]?.groupLabel?.[langue] ?? t(`droits.objets.${objet}` as 'droits.objets.entity')
+  );
 }

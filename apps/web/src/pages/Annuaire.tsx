@@ -16,6 +16,9 @@ import {
   PageHeader,
   Select,
   TableWrap,
+  Td,
+  Th,
+  Tr,
 } from '@/components/ui/primitives';
 
 /**
@@ -172,44 +175,42 @@ export function Annuaire() {
 
       {regles.data && regles.data.length > 0 && (
         <TableWrap>
-          <table className="w-full text-sm">
-            <thead className="border-line text-faint border-b text-left text-[11px] tracking-wider uppercase">
-              <tr>
-                <th className="px-3 py-2 font-semibold">{t('annuaire.groupe')}</th>
-                <th className="px-3 py-2 font-semibold">{t('annuaire.profil')}</th>
-                <th className="px-3 py-2 font-semibold">{t('annuaire.entite')}</th>
-                <th className="px-3 py-2 font-semibold">{t('annuaire.portee')}</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-line divide-y">
-              {regles.data.map((regle) => (
-                <tr key={regle.id} className="hover:bg-sunken">
-                  <td className="text-ink px-3 py-2 font-mono">{regle.groupName}</td>
-                  <td className="text-ink px-3 py-2">{regle.profile.name}</td>
-                  <td className="text-muted px-3 py-2">{regle.entity.completeName}</td>
-                  <td className="px-3 py-2">
-                    {regle.isRecursive ? (
-                      <Badge ton="marque">{t('annuaire.porteeRecursive')}</Badge>
-                    ) : (
-                      <span className="text-faint text-xs">{t('annuaire.porteeEntite')}</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <Button
-                      taille="sm"
-                      variante="danger"
-                      onClick={() => {
-                        supprimer.mutate(regle.id);
-                      }}
-                    >
-                      {t('commun.supprimer')}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <thead>
+            <tr>
+              <Th>{t('annuaire.groupe')}</Th>
+              <Th>{t('annuaire.profil')}</Th>
+              <Th>{t('annuaire.entite')}</Th>
+              <Th>{t('annuaire.portee')}</Th>
+              <Th />
+            </tr>
+          </thead>
+          <tbody>
+            {regles.data.map((regle) => (
+              <Tr key={regle.id}>
+                <Td className="text-ink font-mono">{regle.groupName}</Td>
+                <Td className="text-ink">{regle.profile.name}</Td>
+                <Td className="text-muted">{regle.entity.completeName}</Td>
+                <Td>
+                  {regle.isRecursive ? (
+                    <Badge ton="marque">{t('annuaire.porteeRecursive')}</Badge>
+                  ) : (
+                    <span className="text-faint text-xs">{t('annuaire.porteeEntite')}</span>
+                  )}
+                </Td>
+                <Td className="text-right">
+                  <Button
+                    taille="sm"
+                    variante="danger"
+                    onClick={() => {
+                      supprimer.mutate(regle.id);
+                    }}
+                  >
+                    {t('commun.supprimer')}
+                  </Button>
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
         </TableWrap>
       )}
     </div>
