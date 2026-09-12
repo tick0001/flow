@@ -121,7 +121,7 @@ collection tournent côte à côte.
 ## Où en est le projet
 
 Les onze jalons de la [feuille de route](docs/06-feuille-de-route.md) sont livrés. La suite fait
-270 tests — dont des tests d'intégration sur une vraie base PostgreSQL qui vérifient l'isolation
+275 tests — dont des tests d'intégration sur une vraie base PostgreSQL qui vérifient l'isolation
 entre entités — plus 12 parcours de bout en bout joués dans un vrai navigateur contre la vraie API :
 connexion, cloisonnement, cycle de vie d'une exécution, planification. L'API compte 58 opérations,
 décrites par une description OpenAPI déduite des contrôleurs.
@@ -152,7 +152,7 @@ Les retours, les rapports d'anomalie et les bots d'essai sont donc utiles mainte
 make             # la liste des cibles
 make verifier    # mise en forme, SVG, lint, types et tests
 pnpm build       # construit tous les paquets
-pnpm test        # 270 tests — nécessite les services démarrés
+pnpm test        # 275 tests — nécessite les services démarrés
 pnpm lint        # ESLint avec règles typées
 pnpm typecheck   # vérification de types sans émission
 pnpm format      # applique Prettier

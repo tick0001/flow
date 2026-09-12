@@ -117,7 +117,7 @@ run side by side.
 
 ## Where the project stands
 
-The eleven milestones of the [roadmap](docs/06-feuille-de-route.md) are delivered. The suite is 270
+The eleven milestones of the [roadmap](docs/06-feuille-de-route.md) are delivered. The suite is 275
 tests — including integration tests against a real PostgreSQL database that check isolation between
 entities — plus 12 end-to-end journeys run in a real browser against the real API: sign-in,
 isolation, execution lifecycle, scheduling. The API has 58 operations, described by an OpenAPI
@@ -147,7 +147,7 @@ Vulnerabilities are reported privately, never through a public issue: [SECURITY]
 make             # the list of targets
 make verifier    # formatting, SVG, lint, types and tests
 pnpm build       # builds every package
-pnpm test        # 270 tests — requires the services running
+pnpm test        # 275 tests — requires the services running
 pnpm lint        # ESLint with typed rules
 pnpm typecheck   # type checking without emit
 pnpm format      # applies Prettier
