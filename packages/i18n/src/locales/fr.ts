@@ -192,6 +192,29 @@ export const fr = {
     parBot: 'Par bot',
     dernierEchec: 'Dernier échec',
   },
+  reglesDeBots: {
+    titre: 'Règles des bots',
+    intro:
+      'Où chaque bot est proposé, et à qui. L’entité dit où il a le droit de tourner, le profil dit qui, là-bas, peut le lancer.',
+    sansRegle:
+      'Le catalogue est global à l’installation, mais un bot sans règle n’est proposé nulle part : il n’apparaît alors que sur cet écran et sur celui des bots, signalé comme fermé.',
+    nouvelle: 'Nouvelle règle',
+    aucune: 'Aucune règle.',
+    aucuneAide: 'Tant qu’aucune règle n’ouvre un bot, personne ne peut le lancer.',
+    bot: 'Bot',
+    botAide: 'Les bots déposés sur cette installation.',
+    profil: 'Profil',
+    profilAide: 'Laissez « tous les profils » pour ouvrir à toute l’entité.',
+    tousLesProfils: 'Tous les profils',
+    entite: 'Entité',
+    portee: 'Portée',
+    porteeAide: 'La règle ouvre-t-elle aussi le bot dans les sous-entités ?',
+    porteeEntite: 'Cette entité',
+    porteeRecursive: 'Et sous-entités',
+    ferme: 'Fermé ici',
+    fermeAide:
+      'Ce bot n’est ouvert par aucune règle sur l’entité active. Vous le voyez parce que vous pouvez le configurer.',
+  },
   annuaire: {
     titre: 'Annuaire',
     intro:
@@ -376,6 +399,8 @@ export const fr = {
     aucuneAide: 'Lancez un bot depuis le catalogue : sa trace apparaîtra ici.',
     filtreStatut: 'Statut',
     tousLesStatuts: 'Tous',
+    filtreEntite: 'Entité',
+    toutesLesEntites: 'Toutes',
     seulementLesMiennes: 'Seulement les miennes',
     retirerFiltreBot: 'Filtré sur {{bot}} — retirer',
     colonneStatut: 'État',

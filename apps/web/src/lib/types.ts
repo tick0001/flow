@@ -1,5 +1,6 @@
 import type {
   ApiKey as ApiKeyServeur,
+  BotRule as BotRuleServeur,
   CronPreview as CronPreviewServeur,
   ExecutionArtifact as ExecutionArtifactServeur,
   ExecutionDetail as ExecutionDetailServeur,
@@ -77,6 +78,7 @@ export type CronPreview = Transporte<CronPreviewServeur>;
 export type JourStats = Transporte<JourStatsServeur>;
 export type Pilotage = Transporte<PilotageServeur>;
 export type DirectoryRule = Transporte<DirectoryRuleServeur>;
+export type BotRule = Transporte<BotRuleServeur>;
 export type PluginSummary = Transporte<PluginSummaryServeur>;
 export type PluginAsset = Transporte<PluginAssetServeur>;
 export type Schedule = Transporte<ScheduleServeur>;

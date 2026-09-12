@@ -60,8 +60,17 @@ export class RightsCatalogService {
     droit('profile', 'update', ['all']),
     droit('profile', 'delete', ['all']),
 
-    droit('bot', 'read', AVEC_AUTEUR),
-    droit('bot', 'execute', AVEC_AUTEUR),
+    // **Le catalogue des bots est global a l'installation** : un bot est un
+    // dossier sur le disque, pas une ligne rattachee a une entite. La portee n'y
+    // filtre donc rien, et seule la presence du droit compte -- d'ou `all` comme
+    // unique valeur proposee, pour ne pas laisser croire a un cloisonnement que
+    // ces deux droits n'appliquent pas.
+    //
+    // Le cloisonnement existe, mais il est porte par les **regles de mise a
+    // disposition** (`bot_rules`), qui decident par entite et par profil quels
+    // bots sont proposes. Voir docs/24-droits-des-bots.md.
+    droit('bot', 'read', ['all']),
+    droit('bot', 'execute', ['all']),
     droit('bot', 'manage', SANS_AUTEUR),
 
     droit('execution', 'read', AVEC_AUTEUR),

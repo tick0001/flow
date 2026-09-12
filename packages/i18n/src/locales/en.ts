@@ -193,6 +193,29 @@ export const en: Traductions = {
     parBot: 'By bot',
     dernierEchec: 'Last failure',
   },
+  reglesDeBots: {
+    titre: 'Bot rules',
+    intro:
+      'Where each bot is offered, and to whom. The entity says where it may run, the profile says who, there, may launch it.',
+    sansRegle:
+      'The catalogue is installation-wide, but a bot with no rule is offered nowhere: it then shows up only on this screen and on the bots screen, marked as closed.',
+    nouvelle: 'New rule',
+    aucune: 'No rules.',
+    aucuneAide: 'Until a rule opens a bot, nobody can launch it.',
+    bot: 'Bot',
+    botAide: 'The bots dropped on this installation.',
+    profil: 'Profile',
+    profilAide: 'Leave “all profiles” to open it to the whole entity.',
+    tousLesProfils: 'All profiles',
+    entite: 'Entity',
+    portee: 'Scope',
+    porteeAide: 'Does the rule also open the bot in sub-entities?',
+    porteeEntite: 'This entity',
+    porteeRecursive: 'And sub-entities',
+    ferme: 'Closed here',
+    fermeAide:
+      'No rule opens this bot on the active entity. You can see it because you may configure it.',
+  },
   annuaire: {
     titre: 'Directory',
     intro:
@@ -375,6 +398,8 @@ export const en: Traductions = {
     aucuneAide: 'Run a bot from the catalogue: its trace will show up here.',
     filtreStatut: 'Status',
     tousLesStatuts: 'All',
+    filtreEntite: 'Entity',
+    toutesLesEntites: 'All',
     seulementLesMiennes: 'Only mine',
     retirerFiltreBot: 'Filtered on {{bot}} — remove',
     colonneStatut: 'State',

@@ -35,6 +35,24 @@ function versRegle(ligne: LigneRegle): DirectoryRule {
   };
 }
 
+/**
+ * Code SQLSTATE d'un refus de PostgreSQL.
+ *
+ * Drizzle enveloppe l'erreur du pilote dans une `DrizzleQueryError` qui ne
+ * reprend pas son `code` : le lire sur l'objet de tete rend `undefined`, et tout
+ * refus de contrainte devient une 500 au lieu du 400 qu'il devrait etre. Il faut
+ * descendre dans `cause`.
+ */
+function codeSql(erreur: unknown): string | undefined {
+  const direct = (erreur as { code?: string }).code;
+
+  if (direct !== undefined) return direct;
+
+  const cause = (erreur as { cause?: unknown }).cause;
+
+  return cause === undefined ? undefined : (cause as { code?: string }).code;
+}
+
 const PROJECTION = sql`
   SELECT r.id,
          r.group_name::text AS "groupName",
@@ -169,7 +187,7 @@ export class DirectoryRulesService {
    * refus de perimetre parfaitement normal.
    */
   private traduire(erreur: unknown): Error {
-    const code = (erreur as { code?: string }).code;
+    const code = codeSql(erreur);
 
     if (code === '23505') {
       return new BadRequestException('Cette regle existe deja pour ce groupe.');

@@ -17,6 +17,7 @@ import { requireContext } from '../common/request-context.js';
 import { DatabaseService } from '../database/database.service.js';
 import { RightsService } from '../auth/rights.service.js';
 import { BotRegistryService } from '../bots/bot-registry.service.js';
+import { BotRulesService } from '../bots/bot-rules.service.js';
 import { ParameterValidatorService } from '../bots/parameter-validator.service.js';
 import { ExecutionsService } from '../executions/executions.service.js';
 import { analyser, fuseauConnu, prochain } from './cron.js';
@@ -29,6 +30,7 @@ export class SchedulesService {
   constructor(
     private readonly db: DatabaseService,
     private readonly registre: BotRegistryService,
+    private readonly reglesDeBots: BotRulesService,
     private readonly parametres: ParameterValidatorService,
     private readonly rights: RightsService,
     private readonly executions: ExecutionsService,
@@ -73,7 +75,7 @@ export class SchedulesService {
    */
   async create(donnees: CreateSchedule): Promise<Schedule> {
     const context = requireContext();
-    const bot = this.verifierLeBot(donnees.botId);
+    const bot = await this.verifierLeBot(donnees.botId);
     const parametres = this.parametres.valider(bot, donnees.parameters);
 
     this.verifierLaCadence(donnees.cron, donnees.timezone);
@@ -122,7 +124,7 @@ export class SchedulesService {
     }
 
     const botId = donnees.botId ?? existante.botId;
-    const bot = donnees.botId === undefined ? null : this.verifierLeBot(donnees.botId);
+    const bot = donnees.botId === undefined ? null : await this.verifierLeBot(donnees.botId);
 
     // Les parametres sont revalides des que l'un des deux change : viser un
     // autre bot avec les anciens parametres est la facon la plus simple de
@@ -131,7 +133,7 @@ export class SchedulesService {
       donnees.parameters === undefined && donnees.botId === undefined
         ? undefined
         : this.parametres.valider(
-            bot ?? this.verifierLeBot(botId),
+            bot ?? (await this.verifierLeBot(botId)),
             donnees.parameters ?? existante.parameters,
           );
 
@@ -183,12 +185,25 @@ export class SchedulesService {
 
   // --- interne ---------------------------------------------------------------
 
-  private verifierLeBot(botId: string) {
+  /**
+   * Le bot existe, il est charge, et il est ouvert la ou l'on planifie.
+   *
+   * La troisieme condition est verifiee ici **et** au declenchement. Ici pour
+   * refuser tout de suite plutot que de laisser poser une planification qui
+   * n'aurait jamais rien lance ; au declenchement parce que la regle peut avoir
+   * ete retiree entre-temps.
+   */
+  private async verifierLeBot(botId: string) {
+    const context = requireContext();
     const bot = this.registre.get(botId);
 
     if (!bot) throw new NotFoundException("Ce bot n'existe pas sur cette installation.");
     if (!bot.loaded) {
       throw new BadRequestException(bot.loadError ?? 'Ce bot est refuse par cette installation.');
+    }
+
+    if (!(await this.reglesDeBots.estDisponible(botId, context.profileId, context.entityPath))) {
+      throw new NotFoundException("Ce bot n'existe pas sur cette installation.");
     }
 
     return bot.manifest;

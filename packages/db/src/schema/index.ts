@@ -9,3 +9,4 @@ export * from './schedules.js';
 export * from './apikeys.js';
 export * from './plugins.js';
 export * from './directory.js';
+export * from './bots.js';

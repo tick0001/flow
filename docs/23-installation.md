@@ -294,6 +294,16 @@ docker compose -f compose.production.yaml up -d
 Les migrations sont jouées par leur propre service, avant que l'API et le worker ne démarrent. Elles
 sont **jouées une fois** : une migration déjà appliquée est reconnue à son nom et passée.
 
+Elles ne font que le schéma. Ce qu'une version demande **en plus** est dit dans la rubrique « À faire
+en montant » du [journal](../CHANGELOG.md), et la lire n'est pas facultatif : une montée depuis la
+`0.1.0` vide les catalogues de bots tant qu'on n'a pas joué
+
+```bash
+docker compose -f compose.production.yaml run --rm   api node apps/api/dist/cli/ouvrir-les-bots.js
+```
+
+qui rétablit le comportement d'avant. Voir [droits des bots](24-droits-des-bots.md).
+
 ### Revenir en arrière
 
 Réépingler l'ancienne version et redémarrer suffit **tant qu'aucune migration n'a été jouée**. Dès

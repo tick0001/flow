@@ -13,6 +13,7 @@ import {
   type ExecutionLogsQuery,
   type ExecutionSummary,
   type ExecutionsQuery,
+  type EntityRef,
   type RightScope,
   type StartExecution,
 } from '@flow/contracts';
@@ -38,6 +39,7 @@ import { requireContext } from '../common/request-context.js';
 import { DatabaseService } from '../database/database.service.js';
 import { RightsService } from '../auth/rights.service.js';
 import { BotRegistryService } from '../bots/bot-registry.service.js';
+import { BotRulesService } from '../bots/bot-rules.service.js';
 import { ParameterValidatorService } from '../bots/parameter-validator.service.js';
 import { QueueService } from '../queue/queue.service.js';
 import { ExecutionRelayService } from './relais.service.js';
@@ -165,6 +167,7 @@ export class ExecutionsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly registre: BotRegistryService,
+    private readonly reglesDeBots: BotRulesService,
     private readonly parametres: ParameterValidatorService,
     private readonly rights: RightsService,
     private readonly file: QueueService,
@@ -192,6 +195,25 @@ export class ExecutionsService {
       // Le motif du refus est deja calcule par le registre et deja affiche sur la
       // carte du bot : le reprendre ici evite deux formulations du meme fait.
       throw new ConflictException(bot.loadError ?? 'Ce bot est refuse par cette installation.');
+    }
+
+    // **Le refus qui compte.** Le catalogue ne propose deja que les bots ouverts
+    // ici, mais l'interface n'est pas un controle d'acces : une clef d'API, un
+    // appel direct ou un onglet reste ouvert depuis un changement de regle
+    // atteignent cette route avec un bot que rien n'ouvre plus.
+    //
+    // Le message ne distingue pas « ce bot n'existe pas » de « ce bot ne vous
+    // est pas ouvert » : les deux se disent introuvable, sans quoi la reponse
+    // confirmerait l'existence d'un bot dont on a justement decide qu'il ne
+    // serait pas propose ici.
+    if (
+      !(await this.reglesDeBots.estDisponible(
+        bot.manifest.id,
+        context.profileId,
+        context.entityPath,
+      ))
+    ) {
+      throw new NotFoundException("Ce bot n'existe pas sur cette installation.");
     }
 
     const parametres = this.parametres.valider(bot.manifest, demande.parameters);
@@ -241,6 +263,50 @@ export class ExecutionsService {
     return this.get(creee.id);
   }
 
+  /**
+   * Les entites sur lesquelles il y a quelque chose a filtrer.
+   *
+   * Deduites des executions visibles, et non de l'arbre des entites. Deux
+   * raisons, et la premiere suffirait : lister l'arbre demande `entity:read`,
+   * que la plupart des operateurs n'ont pas -- le filtre disparaitrait donc
+   * pour ceux qui en ont le plus besoin. La seconde est qu'une liste deroulante
+   * de trente entites dont deux ont des executions fait chercher au lieu de
+   * choisir.
+   *
+   * Le `DISTINCT` s'appuie sur `executions_entity_recent_idx`, dont l'entite est
+   * la premiere colonne.
+   */
+  async entites(): Promise<EntityRef[]> {
+    const portee = await this.restrictionDePortee();
+    const conditions = portee ? [portee] : [];
+
+    return this.db.asUser(async (tx) => {
+      const resultat = await tx.execute<{
+        id: number;
+        name: string;
+        completeName: string;
+        path: string;
+        parentId: number | null;
+      }>(sql`
+        SELECT DISTINCT e.id, e.name, e.complete_name AS "completeName",
+               e.path::text AS "path", e.parent_id AS "parentId"
+          FROM executions x
+          JOIN entities e ON e.id = x.entity_id
+         ${conditions.length > 0 ? sql`WHERE ${and(...conditions)}` : sql``}
+         ORDER BY e.complete_name
+      `);
+
+      return resultat.rows.map((ligne) => ({
+        id: ligne.id,
+        name: ligne.name,
+        completeName: ligne.completeName,
+        path: ligne.path,
+        level: ligne.path.split('.').length - 1,
+        parentId: ligne.parentId,
+      }));
+    });
+  }
+
   /** Une page d'executions, de la plus recente a la plus ancienne. */
   async list(
     requete: ExecutionsQuery,
@@ -251,6 +317,11 @@ export class ExecutionsService {
 
     if (portee) conditions.push(portee);
     if (requete.botId) conditions.push(eq(executions.botId, requete.botId));
+    // Un resserrement, jamais un elargissement : la portee du droit et le
+    // Row-Level Security sont deja appliques au-dessus, et une entite hors du
+    // perimetre rend simplement une liste vide plutot qu'un refus -- c'est un
+    // filtre, et un filtre qui ne trouve rien n'est pas une erreur.
+    if (requete.entityId) conditions.push(eq(executions.entityId, requete.entityId));
     if (requete.scheduleId) conditions.push(eq(executions.scheduleId, requete.scheduleId));
     if (requete.status) conditions.push(eq(executions.status, requete.status));
     if (requete.mine) conditions.push(eq(executions.requestedBy, context.userId));

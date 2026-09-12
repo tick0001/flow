@@ -26,7 +26,7 @@ import {
   IconUtilisateurs,
   type Icone,
 } from '@/components/ui/icons';
-import { Badge, Checkbox, Marque, Select } from '@/components/ui/primitives';
+import { Badge, Marque, Select } from '@/components/ui/primitives';
 
 interface Entree {
   to: string;
@@ -114,6 +114,13 @@ function SelecteurTheme() {
  * Il liste le perimetre **habilite** -- tout ce vers quoi on peut basculer --
  * qui n'est pas le perimetre de travail : ce dernier se limite a l'entite
  * choisie, et c'est lui seul qui filtre les donnees.
+ *
+ * **La descendance est toujours demandee**, et le serveur ne l'accorde que si
+ * une habilitation recursive la couvre reellement. Il n'y a donc pas de case a
+ * cocher : une habilitation recursive signifie qu'on repond de la branche, et
+ * une bascule qui masque la moitie de ce dont on repond ne rend service a
+ * personne -- c'est un filtre de liste, pas un changement de contexte. Le badge
+ * reste, pour que la portee elargie se voie.
  */
 function SelecteurContexte() {
   const { t } = useTranslation();
@@ -123,14 +130,8 @@ function SelecteurContexte() {
   if (!context) return null;
 
   const actuelle = `${String(context.entity.id)}:${String(context.profile.id)}`;
-  const recursifPossible = context.available.some(
-    (choix) =>
-      choix.entity.id === context.entity.id &&
-      choix.profile.id === context.profile.id &&
-      choix.isRecursive,
-  );
 
-  async function basculer(valeur: string, sousEntites: boolean): Promise<void> {
+  async function basculer(valeur: string): Promise<void> {
     const [entityId, profileId] = valeur.split(':').map(Number);
 
     if (entityId === undefined || profileId === undefined) return;
@@ -138,7 +139,7 @@ function SelecteurContexte() {
     setEnCours(true);
 
     try {
-      await changerContexte({ entityId, profileId, includeSubEntities: sousEntites });
+      await changerContexte({ entityId, profileId, includeSubEntities: true });
     } finally {
       setEnCours(false);
     }
@@ -155,7 +156,7 @@ function SelecteurContexte() {
         value={actuelle}
         disabled={enCours}
         onChange={(evenement) => {
-          void basculer(evenement.target.value, context.includeSubEntities);
+          void basculer(evenement.target.value);
         }}
       >
         {context.available.map((choix) => (
@@ -168,27 +169,10 @@ function SelecteurContexte() {
         ))}
       </Select>
 
-      {/* La case n'apparait que si une habilitation recursive la rend
-          honorable : l'afficher sans effet ferait croire a une panne.
-
-          Masquee sur telephone, ou la barre n'a pas de quoi la loger : le badge
-          reste, si bien que la portee elargie continue de se voir meme quand on
-          ne peut plus la changer. */}
-      {recursifPossible && (
-        <span className="hidden shrink-0 sm:inline">
-          <Checkbox
-            label={t('session.sousEntites')}
-            checked={context.includeSubEntities}
-            disabled={enCours}
-            onChange={(evenement) => {
-              void basculer(actuelle, evenement.target.checked);
-            }}
-          />
-        </span>
-      )}
-
+      {/* Le badge dit la portee, il ne la change pas : masque sous `sm`, ou la
+          barre n'a pas de quoi le loger a cote du selecteur. */}
       {context.includeSubEntities && (
-        <span className="shrink-0">
+        <span className="hidden shrink-0 sm:inline">
           <Badge ton="marque">{t('session.badgeSousEntites')}</Badge>
         </span>
       )}
@@ -270,6 +254,14 @@ export function Coquille() {
           label: t('profils.titre'),
           icone: IconDroits,
           droit: ['profile', 'read'],
+        },
+        {
+          to: '/regles-de-bots',
+          label: t('reglesDeBots.titre'),
+          icone: IconBot,
+          // `bot:manage`, et non `bot:read` : decider ou un bot est propose
+          // n'est pas le consulter.
+          droit: ['bot', 'manage'],
         },
         { to: '/clefs', label: t('clefs.titre'), icone: IconClef, droit: ['apikey', 'read'] },
         {

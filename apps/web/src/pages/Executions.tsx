@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { dureeLisible, estTerminal, instantLisible, TON_DU_STATUT } from '@/lib/executions';
-import type { ExecutionStatus, ExecutionSummary, Page } from '@/lib/types';
+import type { EntityRef, ExecutionStatus, ExecutionSummary, Page } from '@/lib/types';
 import {
   Badge,
   Button,
@@ -56,17 +56,19 @@ export function Executions() {
   const statut = parametres.get('statut') ?? '';
   const botId = parametres.get('bot') ?? '';
   const planification = parametres.get('planification') ?? '';
+  const entite = parametres.get('entite') ?? '';
 
   const requete = new URLSearchParams();
 
   if (statut) requete.set('status', statut);
   if (botId) requete.set('botId', botId);
   if (planification) requete.set('scheduleId', planification);
+  if (entite) requete.set('entityId', entite);
   if (seulementLesMiennes) requete.set('mine', 'true');
 
   const { data, isPending, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
-      queryKey: ['executions', statut, botId, planification, seulementLesMiennes],
+      queryKey: ['executions', statut, botId, planification, entite, seulementLesMiennes],
       queryFn: ({ pageParam }) => {
         const avec = new URLSearchParams(requete);
 
@@ -87,6 +89,15 @@ export function Executions() {
     });
 
   const executions = (data?.pages ?? []).flatMap((page) => page.items);
+
+  // Les entites ou il y a quelque chose a filtrer, deduites des executions
+  // visibles : l'arbre complet demande `entity:read`, que la plupart des
+  // operateurs n'ont pas.
+  const entites = useQuery({
+    queryKey: ['executions-entites'],
+    queryFn: () => api.get<EntityRef[]>('/executions/entites'),
+    staleTime: 60_000,
+  });
 
   const changerFiltre = (clef: string, valeur: string): void => {
     const suivant = new URLSearchParams(parametres);
@@ -117,6 +128,26 @@ export function Executions() {
             ))}
           </Select>
         </Field>
+
+        {/* Le selecteur n'apparait qu'a partir de deux entites : en proposer une
+            seule, deja la seule visible, serait un controle sans effet. */}
+        {entites.data && entites.data.length > 1 && (
+          <Field label={t('executions.filtreEntite')} className="w-64">
+            <Select
+              value={entite}
+              onChange={(evenement) => {
+                changerFiltre('entite', evenement.target.value);
+              }}
+            >
+              <option value="">{t('executions.toutesLesEntites')}</option>
+              {entites.data.map((choix) => (
+                <option key={choix.id} value={choix.id}>
+                  {choix.completeName}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
 
         <Checkbox
           label={t('executions.seulementLesMiennes')}

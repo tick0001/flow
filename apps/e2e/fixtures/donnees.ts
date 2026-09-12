@@ -38,7 +38,10 @@ export const PREFIXE = 'PARCOURS';
 export const MOT_DE_PASSE = 'parcours-flow-2026';
 
 export interface Decor {
-  entites: Record<'racine' | 'nord' | 'sud', { id: number; path: string }>;
+  entites: Record<
+    'racine' | 'nord' | 'sud',
+    { id: number; path: string; name: string; completeName: string }
+  >;
   profils: Record<'tous' | 'operateur', number>;
   comptes: Record<'patronne' | 'nord' | 'sud', { id: number; username: string }>;
   /** Cree a la demande un compte valide mais habilite nulle part. */
@@ -68,8 +71,10 @@ export async function poserLeDecor(): Promise<Decor> {
 
   const entites: Decor['entites'] = {
     racine: await creerEntite(connexion, 'Racine', null),
-    nord: { id: 0, path: '' },
-    sud: { id: 0, path: '' },
+    // Remplaces juste apres : une entite fille exige l'identifiant de sa mere,
+    // que l'objet litteral ne peut pas encore nommer.
+    nord: { id: 0, path: '', name: '', completeName: '' },
+    sud: { id: 0, path: '', name: '', completeName: '' },
   };
 
   entites.nord = await creerEntite(connexion, 'Nord', entites.racine.id);
@@ -78,8 +83,8 @@ export async function poserLeDecor(): Promise<Decor> {
   const profils: Decor['profils'] = {
     tous: await creerProfil(connexion, 'Tous les droits', [
       ['entity', 'read', 'recursive'],
-      ['bot', 'read', 'recursive'],
-      ['bot', 'execute', 'recursive'],
+      ['bot', 'read', 'all'],
+      ['bot', 'execute', 'all'],
       ['execution', 'read', 'recursive'],
       ['execution', 'cancel', 'recursive'],
       ['schedule', 'read', 'recursive'],
@@ -89,8 +94,8 @@ export async function poserLeDecor(): Promise<Decor> {
     ]),
     operateur: await creerProfil(connexion, 'Operateur', [
       ['entity', 'read', 'entity'],
-      ['bot', 'read', 'entity'],
-      ['bot', 'execute', 'entity'],
+      ['bot', 'read', 'all'],
+      ['bot', 'execute', 'all'],
       ['execution', 'read', 'entity'],
       ['schedule', 'read', 'entity'],
       ['schedule', 'create', 'entity'],
@@ -98,6 +103,16 @@ export async function poserLeDecor(): Promise<Decor> {
       ['schedule', 'delete', 'entity'],
     ]),
   };
+
+  // **Sans regle, aucun bot n'est propose.** Le decor ouvre le bot de reference
+  // a toute la branche du decor, pour tous les profils : c'est le point de
+  // depart le plus large, et les parcours qui eprouvent le cloisonnement le font
+  // sur les executions, pas sur la mise a disposition.
+  await connexion.db.execute(sql`
+    INSERT INTO bot_rules (bot_id, entity_id, is_recursive, profile_id)
+    VALUES ('exemple.bonjour', ${entites.racine.id}, true, NULL)
+    ON CONFLICT DO NOTHING
+  `);
 
   const comptes: Decor['comptes'] = {
     patronne: await creerCompte(connexion, 'patronne', profils.tous, entites.racine.id, true),
@@ -132,11 +147,20 @@ async function creerEntite(
   connexion: Connection,
   nom: string,
   parent: number | null,
-): Promise<{ id: number; path: string }> {
-  const resultat = await connexion.db.execute<{ id: number; path: string }>(sql`
+): Promise<{ id: number; path: string; name: string; completeName: string }> {
+  // `complete_name` est recalcule par un declencheur a partir de l'arbre : il
+  // est relu ici plutot que suppose, sinon le decor annoncerait le nom court
+  // qu'on vient d'ecrire et les parcours chercheraient un libelle qui n'existe
+  // nulle part a l'ecran.
+  const resultat = await connexion.db.execute<{
+    id: number;
+    path: string;
+    name: string;
+    completeName: string;
+  }>(sql`
     INSERT INTO entities (name, parent_id, path, complete_name)
     VALUES (${`${PREFIXE} ${nom}`}, ${parent}, 'temporaire', ${nom})
-    RETURNING id, path::text AS path
+    RETURNING id, path::text AS path, name, complete_name AS "completeName"
   `);
 
   const ligne = resultat.rows[0];
@@ -214,6 +238,7 @@ async function effacer(connexion: Connection): Promise<void> {
   await connexion.db.execute(sql`DELETE FROM executions WHERE entity_id IN (${entites})`);
   await connexion.db.execute(sql`DELETE FROM api_keys WHERE entity_id IN (${entites})`);
   await connexion.db.execute(sql`DELETE FROM directory_rules WHERE entity_id IN (${entites})`);
+  await connexion.db.execute(sql`DELETE FROM bot_rules WHERE entity_id IN (${entites})`);
   await connexion.db.execute(sql`DELETE FROM sessions WHERE user_id IN (${comptes})`);
   await connexion.db.execute(sql`DELETE FROM sessions WHERE entity_id IN (${entites})`);
   await connexion.db.execute(sql`DELETE FROM entity_settings WHERE entity_id IN (${entites})`);

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { entityRefSchema, profileRefSchema } from './auth.js';
 
 /**
  * Etiquettes libres plutot qu'un enumere de categories.
@@ -80,8 +81,50 @@ export const botSummarySchema = z.object({
   loadError: z.string().nullable(),
   canExecute: z.boolean(),
   canManage: z.boolean(),
+  /**
+   * Le bot est-il ouvert la ou l'on travaille ?
+   *
+   * Faux n'apparait qu'aux porteurs de `bot:manage` : pour les autres, un bot
+   * ferme n'est simplement pas dans la liste. Le leur montrer grise ferait
+   * connaitre l'existence de bots qu'on a justement decide de ne pas leur
+   * proposer, et inviterait a demander pourquoi.
+   */
+  available: z.boolean(),
 });
 export type BotSummary = z.infer<typeof botSummarySchema>;
+
+/**
+ * Une regle de mise a disposition, telle que l'ecran l'affiche.
+ *
+ * `profile` a nul signifie **tous les profils** de l'entite visee.
+ */
+export const botRuleSchema = z.object({
+  id: z.number().int().positive(),
+  botId: z.string(),
+  entity: entityRefSchema,
+  isRecursive: z.boolean(),
+  profile: profileRefSchema.nullable(),
+  createdAt: z.coerce.date(),
+});
+export type BotRule = z.infer<typeof botRuleSchema>;
+
+export const createBotRuleSchema = z.object({
+  botId: z.string().min(3).max(64),
+  entityId: z.number().int().positive(),
+  /**
+   * La regle porte-t-elle sur la descendance de l'entite ?
+   *
+   * Vrai par defaut, contrairement aux habilitations : celles-ci accordent des
+   * droits a une personne, et un defaut qui descend s'y decouvre le jour ou
+   * quelqu'un voit une branche qu'il ne devait pas voir. Une regle de bot
+   * n'accorde rien a personne -- elle rend un outil disponible --, et l'ouvrir
+   * a une entite sans sa descendance est le cas rare.
+   */
+  isRecursive: z.boolean().default(true),
+  /** Omis ou nul : tous les profils. */
+  profileId: z.number().int().positive().nullable().optional(),
+});
+export type CreateBotRule = z.infer<typeof createBotRuleSchema>;
 
 /**
  * Demande de lancement.

@@ -45,7 +45,10 @@ function droitsAdministration(): { object: string; action: string; scope: RightS
  */
 const DROITS_OBSERVATION: { object: string; action: string; scope: RightScope }[] = [
   { object: 'entity', action: 'read', scope: 'entity' },
-  { object: 'bot', action: 'read', scope: 'entity' },
+  // `all` parce que le catalogue des bots est global : voir le commentaire du
+  // catalogue des droits. Ce que ce profil voit reellement est decide par les
+  // regles de mise a disposition, pas par cette portee.
+  { object: 'bot', action: 'read', scope: 'all' },
   { object: 'execution', action: 'read', scope: 'own' },
 ];
 

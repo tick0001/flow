@@ -25,6 +25,7 @@ import {
   type ExecutionLog,
   type ExecutionSummary,
   type StartExecution,
+  type EntityRef,
 } from '@flow/contracts';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard.js';
@@ -64,6 +65,19 @@ export class ExecutionsController {
     requete: ReturnType<typeof executionsQuerySchema.parse>,
   ): Promise<{ items: ExecutionSummary[]; nextCursor: string | null }> {
     return this.executions.list(requete);
+  }
+
+  /**
+   * Les entites a proposer dans le filtre.
+   *
+   * **Avant `:id`**, et l'ordre n'est pas indifferent : Nest apparie les routes
+   * dans l'ordre de declaration, et `@Get(':id')` avalerait `entites` comme un
+   * identifiant -- la route rendrait alors une 400 sur un UUID malforme.
+   */
+  @Get('entites')
+  @RequireRight('execution', 'read')
+  entites(): Promise<EntityRef[]> {
+    return this.executions.entites();
   }
 
   @Get(':id')

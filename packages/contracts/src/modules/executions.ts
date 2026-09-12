@@ -247,6 +247,15 @@ export const executionsQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   botId: z.string().max(64).optional(),
+  /**
+   * Une entite du perimetre de travail, et elle seule -- sans sa descendance.
+   *
+   * Il remplace la case « inclure les sous-entites » du selecteur de contexte,
+   * qui melangeait deux choses : la portee d'un contexte de travail et le
+   * resserrement d'une liste. Le contexte dit ce qu'on a le droit de voir ; ce
+   * filtre-ci dit ce qu'on veut regarder maintenant.
+   */
+  entityId: z.coerce.number().int().positive().optional(),
   /** Les executions produites par une planification donnee. */
   scheduleId: z.uuid().optional(),
   status: executionStatusSchema.optional(),
