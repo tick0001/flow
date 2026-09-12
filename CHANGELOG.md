@@ -23,6 +23,12 @@ communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas 
 
 ### Documentation
 
+- **La démonstration publique est annoncée** : les deux README, le formulaire d'anomalie et les
+  liens de contact des issues mènent à [flow-demo.tickand.fr](https://flow-demo.tickand.fr) et
+  nomment le compte à essayer. La première question du formulaire d'anomalie devient « reproduit sur
+  la démonstration ? » — c'est elle qui sépare d'emblée un défaut du produit d'un problème de
+  déploiement.
+
 - **Le guide couvre la surcouche Traefik**, que seul un commentaire du fichier décrivait&nbsp;: les
   quatre variables, ce que chacune casse quand elle est fausse, et le cas qui ne se voit pas — un
   nom de résolveur inconnu fait répondre le site en HTTPS avec le certificat auto-signé de Traefik.

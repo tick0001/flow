@@ -8,6 +8,21 @@ body:
         Merci. Les rapports en anglais sont les bienvenus — répondez dans la langue qui
         vous arrange.
 
+  - type: dropdown
+    id: demonstration
+    attributes:
+      label: Reproduit sur la démonstration publique ?
+      description: >-
+        La question la plus utile du formulaire : elle sépare d'emblée un défaut du produit
+        d'un problème de déploiement. https://flow-demo.tickand.fr — sophie / flow
+      options:
+        - Oui, reproduit sur flow-demo.tickand.fr
+        - Non, seulement sur mon installation
+        - Pas essayé
+        - Sans objet
+    validations:
+      required: true
+
   - type: input
     id: version
     attributes:

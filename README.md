@@ -9,6 +9,10 @@ trace of what happened when they break.
 [![Licence](https://img.shields.io/badge/licence-AGPL--3.0-blue)](LICENSE)
 [![CI](https://github.com/tick0001/flow/actions/workflows/ci.yml/badge.svg)](https://github.com/tick0001/flow/actions/workflows/ci.yml)
 
+**[tickand.fr/flow](https://tickand.fr/en/flow/)** ·
+**[Try the live demo](https://flow-demo.tickand.fr)** — sign in as `sophie` / `flow`. Everything
+resets on the hour, and none of the bundled bots takes an address.
+
 Part of the **tick&** collection, alongside [Tick&](https://tickand.fr), an ITSM service desk, whose
 stack, conventions and visual writing Flow& shares.
 
