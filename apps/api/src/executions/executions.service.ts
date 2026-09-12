@@ -38,6 +38,7 @@ import { requireContext } from '../common/request-context.js';
 import { DatabaseService } from '../database/database.service.js';
 import { RightsService } from '../auth/rights.service.js';
 import { BotRegistryService } from '../bots/bot-registry.service.js';
+import { BotRulesService } from '../bots/bot-rules.service.js';
 import { ParameterValidatorService } from '../bots/parameter-validator.service.js';
 import { QueueService } from '../queue/queue.service.js';
 import { ExecutionRelayService } from './relais.service.js';
@@ -165,6 +166,7 @@ export class ExecutionsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly registre: BotRegistryService,
+    private readonly reglesDeBots: BotRulesService,
     private readonly parametres: ParameterValidatorService,
     private readonly rights: RightsService,
     private readonly file: QueueService,
@@ -192,6 +194,25 @@ export class ExecutionsService {
       // Le motif du refus est deja calcule par le registre et deja affiche sur la
       // carte du bot : le reprendre ici evite deux formulations du meme fait.
       throw new ConflictException(bot.loadError ?? 'Ce bot est refuse par cette installation.');
+    }
+
+    // **Le refus qui compte.** Le catalogue ne propose deja que les bots ouverts
+    // ici, mais l'interface n'est pas un controle d'acces : une clef d'API, un
+    // appel direct ou un onglet reste ouvert depuis un changement de regle
+    // atteignent cette route avec un bot que rien n'ouvre plus.
+    //
+    // Le message ne distingue pas « ce bot n'existe pas » de « ce bot ne vous
+    // est pas ouvert » : les deux se disent introuvable, sans quoi la reponse
+    // confirmerait l'existence d'un bot dont on a justement decide qu'il ne
+    // serait pas propose ici.
+    if (
+      !(await this.reglesDeBots.estDisponible(
+        bot.manifest.id,
+        context.profileId,
+        context.entityPath,
+      ))
+    ) {
+      throw new NotFoundException("Ce bot n'existe pas sur cette installation.");
     }
 
     const parametres = this.parametres.valider(bot.manifest, demande.parameters);

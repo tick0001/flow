@@ -211,6 +211,7 @@ operation carries the right it requires.
 | [Insights](docs/20-pilotage.md)                                     | Success rate, durations, failure signature, CSV export      |
 | [Plugins](docs/21-plugins.md)                                       | Manifest, rights, hooks, events, dedicated schema, removal  |
 | [Directory and journeys](docs/22-annuaire-et-parcours.md)           | LDAP / AD, assignment rules, end-to-end tests               |
+| [Bot rights](docs/24-droits-des-bots.md)                            | Who may launch what, and where: rules by entity and profile |
 | [Interface](docs/12-interface.md)                                   | Colour tokens, navigation, shared building blocks           |
 | [Installation and operation](docs/23-installation.md)               | Containers, Linux, Windows Server, backups, upgrades        |
 | [Changelog](CHANGELOG.md)                                           | What each release changes, and what it requires of you      |

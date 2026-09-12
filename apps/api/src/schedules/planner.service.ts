@@ -8,6 +8,7 @@ import { sql } from '@flow/db';
 import { DatabaseService } from '../database/database.service.js';
 import { QueueService } from '../queue/queue.service.js';
 import { BotRegistryService } from '../bots/bot-registry.service.js';
+import { BotRulesService } from '../bots/bot-rules.service.js';
 import { prochain } from './cron.js';
 
 /**
@@ -47,6 +48,7 @@ export class SchedulePlannerService implements OnApplicationBootstrap, OnModuleD
     private readonly db: DatabaseService,
     private readonly file: QueueService,
     private readonly registre: BotRegistryService,
+    private readonly regles: BotRulesService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -100,16 +102,19 @@ export class SchedulePlannerService implements OnApplicationBootstrap, OnModuleD
         cron: string;
         timezone: string;
         entityId: number;
+        entityPath: string;
         ownerId: number;
         profileId: number;
       }>(sql`
-        SELECT id, name, bot_id AS "botId", parameters, headed, cron, timezone,
-               entity_id AS "entityId", owner_id AS "ownerId", profile_id AS "profileId"
-          FROM schedules
-         WHERE is_active
-           AND next_run_at IS NOT NULL
-           AND next_run_at <= now()
-         ORDER BY next_run_at
+        SELECT s.id, s.name, s.bot_id AS "botId", s.parameters, s.headed, s.cron, s.timezone,
+               s.entity_id AS "entityId", e.path::text AS "entityPath",
+               s.owner_id AS "ownerId", s.profile_id AS "profileId"
+          FROM schedules s
+          JOIN entities e ON e.id = s.entity_id
+         WHERE s.is_active
+           AND s.next_run_at IS NOT NULL
+           AND s.next_run_at <= now()
+         ORDER BY s.next_run_at
          LIMIT ${PAR_PASSE}
          FOR UPDATE SKIP LOCKED
       `);
@@ -138,6 +143,23 @@ export class SchedulePlannerService implements OnApplicationBootstrap, OnModuleD
           // ci-dessus a deja repousse l'echeance.
           this.logger.warn(
             `Planification « ${planification.name} » : bot ${planification.botId} indisponible.`,
+          );
+
+          continue;
+        }
+
+        // La regle a pu etre retiree depuis la creation de la planification. Une
+        // planification n'est pas un droit acquis : elle rejoue un lancement, et
+        // un lancement que l'on refuserait a la main doit etre refuse ici aussi.
+        if (
+          !(await this.regles.estDisponible(
+            planification.botId,
+            planification.profileId,
+            planification.entityPath,
+          ))
+        ) {
+          this.logger.warn(
+            `Planification « ${planification.name} » : le bot ${planification.botId} n'est plus ouvert sur cette entite.`,
           );
 
           continue;

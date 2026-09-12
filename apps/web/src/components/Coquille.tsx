@@ -255,6 +255,14 @@ export function Coquille() {
           icone: IconDroits,
           droit: ['profile', 'read'],
         },
+        {
+          to: '/regles-de-bots',
+          label: t('reglesDeBots.titre'),
+          icone: IconBot,
+          // `bot:manage`, et non `bot:read` : decider ou un bot est propose
+          // n'est pas le consulter.
+          droit: ['bot', 'manage'],
+        },
         { to: '/clefs', label: t('clefs.titre'), icone: IconClef, droit: ['apikey', 'read'] },
         {
           to: '/annuaire',

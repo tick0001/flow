@@ -119,6 +119,15 @@ profil en entier sans connaître la liste des droits qui existent — ce qui n'y
 La garde vérifie **l'existence** du droit, pas sa portée : `own`, `entity` ou `all` conditionnent
 _quelles lignes_ sont concernées, ce que seule la requête peut décider.
 
+**Trois objets n'ont pas d'entité, et leur portée n'admet donc que `all`** : les profils, les plugins
+et les bots. Un profil est un référentiel global ; un plugin s'installe pour toute l'installation ; un
+bot est un dossier sur le disque. Proposer `entity` sur l'un des trois afficherait dans la matrice un
+cloisonnement que rien n'applique.
+
+Les bots en ont un malgré tout, mais il est porté ailleurs : des **règles de mise à disposition**
+décident, par entité et par profil, quels bots sont proposés où. Voir
+[droits des bots](24-droits-des-bots.md).
+
 ## 7. Row-Level Security — le filet de sécurité
 
 Le filtrage applicatif reste la première ligne : explicite, testable, et il produit des requêtes

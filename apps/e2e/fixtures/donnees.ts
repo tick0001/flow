@@ -78,8 +78,8 @@ export async function poserLeDecor(): Promise<Decor> {
   const profils: Decor['profils'] = {
     tous: await creerProfil(connexion, 'Tous les droits', [
       ['entity', 'read', 'recursive'],
-      ['bot', 'read', 'recursive'],
-      ['bot', 'execute', 'recursive'],
+      ['bot', 'read', 'all'],
+      ['bot', 'execute', 'all'],
       ['execution', 'read', 'recursive'],
       ['execution', 'cancel', 'recursive'],
       ['schedule', 'read', 'recursive'],
@@ -89,8 +89,8 @@ export async function poserLeDecor(): Promise<Decor> {
     ]),
     operateur: await creerProfil(connexion, 'Operateur', [
       ['entity', 'read', 'entity'],
-      ['bot', 'read', 'entity'],
-      ['bot', 'execute', 'entity'],
+      ['bot', 'read', 'all'],
+      ['bot', 'execute', 'all'],
       ['execution', 'read', 'entity'],
       ['schedule', 'read', 'entity'],
       ['schedule', 'create', 'entity'],
@@ -98,6 +98,16 @@ export async function poserLeDecor(): Promise<Decor> {
       ['schedule', 'delete', 'entity'],
     ]),
   };
+
+  // **Sans regle, aucun bot n'est propose.** Le decor ouvre le bot de reference
+  // a toute la branche du decor, pour tous les profils : c'est le point de
+  // depart le plus large, et les parcours qui eprouvent le cloisonnement le font
+  // sur les executions, pas sur la mise a disposition.
+  await connexion.db.execute(sql`
+    INSERT INTO bot_rules (bot_id, entity_id, is_recursive, profile_id)
+    VALUES ('exemple.bonjour', ${entites.racine.id}, true, NULL)
+    ON CONFLICT DO NOTHING
+  `);
 
   const comptes: Decor['comptes'] = {
     patronne: await creerCompte(connexion, 'patronne', profils.tous, entites.racine.id, true),
@@ -214,6 +224,7 @@ async function effacer(connexion: Connection): Promise<void> {
   await connexion.db.execute(sql`DELETE FROM executions WHERE entity_id IN (${entites})`);
   await connexion.db.execute(sql`DELETE FROM api_keys WHERE entity_id IN (${entites})`);
   await connexion.db.execute(sql`DELETE FROM directory_rules WHERE entity_id IN (${entites})`);
+  await connexion.db.execute(sql`DELETE FROM bot_rules WHERE entity_id IN (${entites})`);
   await connexion.db.execute(sql`DELETE FROM sessions WHERE user_id IN (${comptes})`);
   await connexion.db.execute(sql`DELETE FROM sessions WHERE entity_id IN (${entites})`);
   await connexion.db.execute(sql`DELETE FROM entity_settings WHERE entity_id IN (${entites})`);

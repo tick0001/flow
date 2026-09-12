@@ -13,8 +13,60 @@ communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas 
 
 ## Non publié
 
-Rien depuis la 0.1.0. La [feuille de route](docs/06-feuille-de-route.md) dit ce qui vient
-ensuite.
+### À faire en montant
+
+- **Les catalogues de bots se vident.** Un bot n'est désormais proposé que là où une règle l'ouvre,
+  et l'absence de règle vaut refus — comme partout ailleurs dans le modèle de droits. Une commande
+  rétablit exactement le comportement d'avant, en une règle par bot sur l'entité racine, récursive,
+  tous profils :
+
+  ```bash
+  docker compose -f docker/compose.production.yaml run --rm     api node apps/api/dist/cli/ouvrir-les-bots.js
+  ```
+
+  Elle est idempotente. Resserrer ensuite se fait écran par écran. Voir
+  [droits des bots](docs/24-droits-des-bots.md).
+
+- **La portée de `bot:read` et `bot:execute` passe à `all`** pour tous les profils. Ce n'est pas une
+  élévation de privilèges : ces droits se comportaient déjà ainsi, la portée n'étant consultée nulle
+  part. La matrice affichait un cloisonnement qui n'existait pas.
+
+### Sécurité
+
+- **La sonde `/api/health` répond 503 quand elle constate une dégradation.** Elle répondait 200 quoi
+  qu'elle constate — base injoignable, file coupée, aucun worker à l'écoute —, et c'est le code que
+  lisent Compose et les orchestrateurs. La sonde de l'image Docker ne pouvait donc échouer que si le
+  processus ne répondait plus du tout, c'est-à-dire dans le seul cas où l'on n'avait pas besoin
+  d'elle. Une API coupée de sa base restait au vert dans `docker compose ps`.
+
+- **Mise à disposition des bots par entité et par profil.** Le catalogue reste global à
+  l'installation — un bot est un dossier sur le disque —, mais des règles décident désormais où
+  chaque bot est proposé et à qui. Le refus est appliqué au catalogue, au lancement, à la création
+  d'une planification et à son déclenchement ; l'interface ne fait que ne pas proposer.
+
+### Corrigé
+
+- **Le favicon et l'aperçu social ne s'affichaient nulle part.** Les deux fichiers étaient du XML
+  invalide — un `--` dans un commentaire, une esperluette isolée dans un attribut —, ce qu'un SVG ne
+  pardonne pas : il est analysé en XML strict. Rien ne le signalait, ni au build, ni dans la console.
+
+- **On ne pouvait pas changer de langue.** L'interface est bilingue et n'offrait nulle part de quoi
+  basculer. Le sélecteur est dans l'en-tête, et la préférence est conservée d'une session à l'autre.
+
+- **L'application était injoignable au téléphone.** La barre de navigation disparaissait sous 768 px
+  sans rien pour la remplacer : il ne restait aucun moyen d'atteindre un autre écran.
+
+- **Un refus de contrainte PostgreSQL rendait une 500** au lieu d'un message lisible, sur les règles
+  d'annuaire : le code SQLSTATE est enveloppé par l'ORM, et n'était pas lu au bon endroit.
+
+### Modifié
+
+- **Les réglages remplacent la barre de navigation au lieu de s'y ajouter.** On y entre par le pied
+  de barre, on en sort par le retour placé en tête.
+
+- **La case « inclure les sous-entités » disparaît.** La descendance est toujours demandée, et le
+  serveur ne l'accorde que si une habilitation récursive la couvre — ce qui était déjà le cas. Un
+  badge dit la portée effective. C'est le comportement de Tick&.
 
 ## [0.1.0] — 12 septembre 2026
 

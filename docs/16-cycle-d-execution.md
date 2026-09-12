@@ -166,5 +166,5 @@ avant de dépiler ; l'écrire à moitié donnerait un réglage qui semble proté
 sur la machine du worker jusqu'au jalon J5. Le dossier est retiré s'il est resté vide, ce qui est le
 cas de la plupart des runs.
 
-**Le droit par bot.** `bot:execute` est global au profil : qui peut lancer peut lancer n'importe
-lequel. Le modèle mérite d'être conçu — par profil ? par entité ? — plutôt que bricolé.
+**Le quota d'exécutions simultanées par bot.** Celui par entité est décrit plus haut ; un quota par
+bot demanderait la même mécanique, et n'a pas plus d'usage démontré.

@@ -101,6 +101,9 @@ export function Bots() {
                       </Badge>
                     ))}
                     {!bot.loaded && <Badge ton="critique">{t('bots.refuse')}</Badge>}
+                    {/* Seuls les porteurs de `bot:manage` recoivent un bot
+                        ferme : pour les autres, il n'est pas dans la liste. */}
+                    {!bot.available && <Badge ton="attention">{t('reglesDeBots.ferme')}</Badge>}
                   </span>
                 }
                 action={
@@ -128,6 +131,15 @@ export function Bots() {
 
               <CardBody className="space-y-4">
                 {bot.loadError && <Notice ton="critique">{bot.loadError}</Notice>}
+
+                {!bot.available && (
+                  <Notice ton="attention">
+                    {t('reglesDeBots.fermeAide')}{' '}
+                    <Link to="/regles-de-bots" className="underline">
+                      {t('reglesDeBots.titre')}
+                    </Link>
+                  </Notice>
+                )}
 
                 {bot.manifest.description && (
                   <p className="text-muted text-sm">{bot.manifest.description}</p>

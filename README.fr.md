@@ -204,23 +204,24 @@ opération porte le droit qu'elle exige.
 
 ## Documentation
 
-| Document                                                          | Contenu                                                      |
-| ----------------------------------------------------------------- | ------------------------------------------------------------ |
-| [Périmètre fonctionnel](docs/01-perimetre-fonctionnel.md)         | Ce que Flow& couvre, et ce qu'il laisse dehors               |
-| [Architecture](docs/02-architecture.md)                           | Monorepo, API, worker, interface, décisions argumentées      |
-| [Entités, droits et sécurité](docs/03-entites-droits-securite.md) | Le modèle multi-organisation et son application par RLS      |
-| [SDK de bots](docs/15-sdk-bots.md)                                | Écrire un bot : métadonnées, schéma, contexte d'exécution    |
-| [Cycle d'une exécution](docs/16-cycle-d-execution.md)             | De la demande au résultat, interruption et reprise comprises |
-| [Temps réel](docs/17-temps-reel.md)                               | Journal, progression, vue en direct, reprise après coupure   |
-| [Historique et stockage](docs/18-historique-et-stockage.md)       | Captures, traces, rétention et purge                         |
-| [Planification et API](docs/19-planification-et-api.md)           | Expressions cron, fuseaux, clés d'API, description OpenAPI   |
-| [Pilotage](docs/20-pilotage.md)                                   | Taux de réussite, durées, signature des échecs, export CSV   |
-| [Plugins](docs/21-plugins.md)                                     | Manifeste, droits, hooks, événements, schéma dédié, retrait  |
-| [Annuaire et parcours](docs/22-annuaire-et-parcours.md)           | LDAP / AD, règles d'affectation, tests de bout en bout       |
-| [Interface](docs/12-interface.md)                                 | Jetons de couleur, navigation, briques communes              |
-| [Installation et exploitation](docs/23-installation.md)           | Conteneurs, Linux, Windows Server, sauvegardes, montées      |
-| [Journal des versions](CHANGELOG.md)                              | Ce que chaque version change, et ce qu'elle exige de vous    |
-| [Feuille de route](docs/06-feuille-de-route.md)                   | Onze jalons, du socle à la publication                       |
+| Document                                                          | Contenu                                                       |
+| ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| [Périmètre fonctionnel](docs/01-perimetre-fonctionnel.md)         | Ce que Flow& couvre, et ce qu'il laisse dehors                |
+| [Architecture](docs/02-architecture.md)                           | Monorepo, API, worker, interface, décisions argumentées       |
+| [Entités, droits et sécurité](docs/03-entites-droits-securite.md) | Le modèle multi-organisation et son application par RLS       |
+| [SDK de bots](docs/15-sdk-bots.md)                                | Écrire un bot : métadonnées, schéma, contexte d'exécution     |
+| [Cycle d'une exécution](docs/16-cycle-d-execution.md)             | De la demande au résultat, interruption et reprise comprises  |
+| [Temps réel](docs/17-temps-reel.md)                               | Journal, progression, vue en direct, reprise après coupure    |
+| [Historique et stockage](docs/18-historique-et-stockage.md)       | Captures, traces, rétention et purge                          |
+| [Planification et API](docs/19-planification-et-api.md)           | Expressions cron, fuseaux, clés d'API, description OpenAPI    |
+| [Pilotage](docs/20-pilotage.md)                                   | Taux de réussite, durées, signature des échecs, export CSV    |
+| [Plugins](docs/21-plugins.md)                                     | Manifeste, droits, hooks, événements, schéma dédié, retrait   |
+| [Annuaire et parcours](docs/22-annuaire-et-parcours.md)           | LDAP / AD, règles d'affectation, tests de bout en bout        |
+| [Droits des bots](docs/24-droits-des-bots.md)                     | Qui peut lancer quoi, et où : règles par entité et par profil |
+| [Interface](docs/12-interface.md)                                 | Jetons de couleur, navigation, briques communes               |
+| [Installation et exploitation](docs/23-installation.md)           | Conteneurs, Linux, Windows Server, sauvegardes, montées       |
+| [Journal des versions](CHANGELOG.md)                              | Ce que chaque version change, et ce qu'elle exige de vous     |
+| [Feuille de route](docs/06-feuille-de-route.md)                   | Onze jalons, du socle à la publication                        |
 
 ## Licence
 
