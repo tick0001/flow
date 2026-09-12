@@ -138,6 +138,37 @@ résoudre.
 À réserver aux machines où Docker n'est pas envisageable. Tout y est possible, mais chaque pièce est
 à installer et à tenir à jour séparément.
 
+**Ces deux chemins n'ont jamais été déroulés sur une machine vierge**, contrairement à celui des
+conteneurs. Attendez-vous à y buter sur quelque chose que le guide ne dit pas — et si cela vous
+arrive, [dites-le](https://github.com/tick0001/flow/issues/new?template=installation.yml) : c'est la
+contribution la plus utile au projet aujourd'hui.
+
+### 3.0 Les archives de version, plutôt que la chaîne de construction
+
+Chaque version publie des **archives autonomes** : le code compilé et ses `node_modules`, prêts à
+extraire. Un serveur de production n'a alors besoin ni de pnpm, ni du monorepo, ni de compiler quoi
+que ce soit.
+
+```bash
+# https://github.com/tick0001/flow/releases — trois archives par version.
+flow-api-0.1.0-linux-x64.tar.gz       # l'API
+flow-worker-0.1.0-linux-x64.tar.gz    # le worker, et Playwright avec lui
+flow-web-0.1.0.tar.gz                 # l'interface : des fichiers statiques
+```
+
+**Une archive par plateforme, et ce n'est pas du zèle.** Argon2 est un module natif : un
+`node_modules` fabriqué sous Linux ne démarre pas sous Windows, et réciproquement. Les
+distributions en musl — Alpine — passent par les images Docker, qui sont bâties dessus.
+
+**Les navigateurs ne sont pas dans l'archive.** Ils pèsent plusieurs centaines de mégaoctets et se
+mettent à jour à leur propre rythme : ils s'installent sur la machine cible, une fois, par
+`npx playwright install chromium` — avec `PLAYWRIGHT_BROWSERS_PATH` pointé hors de l'arborescence du
+code, que la montée de version remplace.
+
+La suite décrit l'installation depuis le dépôt, qui vaut aussi pour qui préfère construire
+lui-même ; remplacez alors les étapes `git clone` / `pnpm install` / `pnpm build` par l'extraction
+des archives.
+
 ### 3.1 Linux
 
 **Les dépendances :** Node 22 ou plus, pnpm 11, PostgreSQL 18 avec les extensions `ltree`, `citext`

@@ -47,24 +47,54 @@ délibéré : tout ce qui s'y trouve porte une étiquette, si bien qu'un clone d
 quelque chose qu'on peut installer.
 
 ```
-chantier/…  ──(rebase)──>  develop  ──(coupe)──>  release/0.1.0  ──(fusion)──>  main
+chantier/…  ──(rebase)──>  develop  ──(coupe)──>  release/0.1.1  ──(fusion)──>  main
+                              ↑                                                   │
+                         dependabot                          étiquette, images et archives
 ```
 
 **Une branche par sujet**, partant de `develop` et fusionnée par _rebase_ : l'historique de
 `develop` reste une suite de commits lisibles, sans les allers-retours d'une revue.
 
+**Une version se publie en fusionnant `release/<version>` dans `main`.** Le numéro vit dans le nom
+de la branche, et nulle part ailleurs : c'est ce qui permet à une pull request d'annoncer ce qu'elle
+publie avant d'être fusionnée, et à toute autre — un correctif de sécurité, une retouche de
+documentation — d'atteindre `main` sans rien publier. La fusion déclenche la vérification du
+manifeste, l'étiquette, puis les images et les archives. Rien à faire à la main, et rien à étiqueter
+soi-même.
+
+```bash
+make version V=0.1.1      # coupe release/0.1.1, monte le manifeste, date le journal
+```
+
+Le nom de la branche doit concorder avec `apps/api/package.json` : c'est ce manifeste que lit
+`/api/health`, et une divergence ferait annoncer à l'installation une version qui n'est pas la
+sienne. La publication refuse de partir dans ce cas — comme elle refuse de réétiqueter une version
+déjà publiée.
+
 **`release/<version>` vers `main` se fusionne avec un commit de fusion**, et c'est la seule
 exception au _rebase_. Un _rebase_ réécrirait les commits, et `develop` se retrouverait à porter
 des doublons orphelins de ce qui est déjà sur `main`.
 
+**Puis `develop` se réaligne**, et cette étape n'est pas facultative :
+
+```bash
+git switch develop && git merge origin/main && git push
+```
+
+Le commit de fusion garde `develop` parmi les ancêtres de `main`, mais l'ancêtre n'est pas le
+contenu : le manifeste monté et la section datée du journal vivent sur la branche de version, et
+`develop` ne les a pas. Couper la version suivante d'un `develop` en retard emporte donc le journal
+et le manifeste d'avant, et les ramène en arrière en fusionnant — sans conflit, donc sans rien pour
+alerter. `make version` refuse de partir dans ce cas.
+
+Dependabot vise `develop` pour ses montées de version. Ses correctifs de sécurité, eux, visent
+`main` : GitHub ne permet pas de les rediriger, et il n'y a pas lieu de le vouloir.
+
 ## Avant d'ouvrir une pull request
 
 ```bash
-pnpm format:check
+make verifier    # mise en forme, SVG, lint, types et tests
 pnpm build
-pnpm lint
-pnpm typecheck
-pnpm test
 ```
 
 L'intégration continue lance exactement cela. Un échec local est un échec distant.
@@ -98,3 +128,27 @@ n'écrivent pas français ; ce qui reste dedans se lit par ceux qui maintiennent
 sémantiques, décrits dans [`docs/12-interface.md`](docs/12-interface.md). Un composant qui écrit
 `bg-emerald-100` deviendra illisible en thème sombre, et personne ne s'en apercevra avant un
 utilisateur.
+
+## Ce que le projet n'acceptera pas
+
+- **Un éditeur de flux visuel.** Un bot est du code, et c'est ce qui lui permet d'être relu,
+  testé et versionné comme le reste. C'est un choix de périmètre, pas un manque.
+- **Un enregistreur de sessions** qui produirait des scripts par capture de clics. Ce qu'il
+  produit se relit mal et casse au premier changement de page.
+- **Une dépendance à un service tiers** pour une fonction du cœur. Flow& s'auto-héberge, et ce
+  que vous installez ne doit appeler personne.
+- **Un contournement du Row-Level Security.** Le cloisonnement est appliqué par la base, et une
+  requête qui passe par le rôle propriétaire pour aller plus vite retire le filet.
+- **Un bot qui contourne une protection anti-robot** — CAPTCHA, détection de navigateur piloté.
+  Ce n'est pas ce pour quoi l'outil est fait, et ce n'est pas ce qu'il aidera à faire.
+
+## Code de conduite
+
+Le projet suit le [Contributor Covenant](CODE_OF_CONDUCT.md). En clair : les désaccords
+techniques sont bienvenus, les attaques personnelles non.
+
+## Licence
+
+En contribuant, vous acceptez que votre travail soit distribué sous
+[AGPL-3.0-or-later](LICENSE), comme le reste. Un plugin chargé dans le processus de l'API en est
+très probablement une œuvre dérivée : à lire avant d'en écrire un propriétaire.

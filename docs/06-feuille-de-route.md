@@ -7,6 +7,11 @@ L'ordre n'est pas négociable sur un point : **l'exécution d'un bot arrive tôt
 d'être du produit, et la repousser derrière les écrans d'administration ferait concevoir tout le
 reste sans savoir ce que l'exécution exige vraiment.
 
+> **Les onze jalons sont livrés**, et la `0.1.0` est publiée : images sur `ghcr.io/tick0001`,
+> archives autonomes pour les installations sans conteneur, et le [journal](../CHANGELOG.md) qui dit
+> ce que chaque version exige avant de monter. La suite ne suit plus une feuille de route mais ce
+> que l'usage remonte — voir la [liste de ce que la 0.1.0 ne fait pas](../CHANGELOG.md).
+
 ## J0 — Le socle
 
 Monorepo, outillage, intégration continue, jetons de la direction artistique, documents du dépôt.
