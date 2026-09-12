@@ -41,4 +41,45 @@ test.describe("Parcours : le cycle de vie d'une exécution", () => {
     // que le denouement a bien ete pose en base, et pas seulement diffuse.
     await expect(tableau).toContainText(/\d+[.,]?\d*\s*(s|ms|min)/);
   });
+
+  /**
+   * Le filtre par entite, qui remplace la case « inclure les sous-entites ».
+   *
+   * La patronne travaille sur la racine, en recursif : elle voit l'execution du
+   * Nord posee par le premier parcours de ce fichier, et celle qu'elle lance
+   * elle-meme sur la racine. Resserrer sur la racine seule doit faire
+   * disparaitre celle du Nord -- c'est exactement ce que la case decochee
+   * faisait, et c'est la seule chose qu'elle faisait.
+   *
+   * Elle lance son propre bot plutot que de compter sur les autres parcours :
+   * le selecteur ne s'affiche qu'a partir de deux entites portant des
+   * executions, et une campagne ou tout se passe dans une seule branche ne le
+   * verrait jamais.
+   */
+  test('le filtre par entité resserre sur une entité, sans sa descendance', async ({
+    page,
+    decor,
+  }) => {
+    await seConnecter(page, decor.comptes.patronne.username);
+    await lancerLeBot(page);
+
+    await page.goto('/executions');
+
+    // Les deux entites sont la : la racine vient d'etre servie, le Nord l'a ete
+    // par le premier parcours.
+    await expect(page.getByRole('table')).toContainText(decor.entites.nord.name);
+
+    // Par role et non par etiquette : `Field` enveloppe le controle dans un
+    // `<label>`, dont le texte inclut donc celui des options. Le nom accessible
+    // du `<select>`, lui, est bien « Entité » -- c'est ce qu'on vise.
+    const filtre = page.getByRole('combobox', { name: 'Entité', exact: true });
+
+    await expect(filtre).toBeVisible();
+    await filtre.selectOption({ label: decor.entites.racine.completeName });
+
+    // La racine n'a aucune execution en propre venue du Nord : la ligne part.
+    await expect(page.getByRole('table')).not.toContainText(decor.entites.nord.name);
+    // Et la sienne reste, sans quoi le filtre aurait simplement tout vide.
+    await expect(page.getByRole('table')).toContainText(decor.entites.racine.name);
+  });
 });

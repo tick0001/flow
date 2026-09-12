@@ -398,6 +398,8 @@ export const en: Traductions = {
     aucuneAide: 'Run a bot from the catalogue: its trace will show up here.',
     filtreStatut: 'Status',
     tousLesStatuts: 'All',
+    filtreEntite: 'Entity',
+    toutesLesEntites: 'All',
     seulementLesMiennes: 'Only mine',
     retirerFiltreBot: 'Filtered on {{bot}} — remove',
     colonneStatut: 'State',

@@ -399,6 +399,8 @@ export const fr = {
     aucuneAide: 'Lancez un bot depuis le catalogue : sa trace apparaîtra ici.',
     filtreStatut: 'Statut',
     tousLesStatuts: 'Tous',
+    filtreEntite: 'Entité',
+    toutesLesEntites: 'Toutes',
     seulementLesMiennes: 'Seulement les miennes',
     retirerFiltreBot: 'Filtré sur {{bot}} — retirer',
     colonneStatut: 'État',

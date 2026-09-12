@@ -68,6 +68,13 @@ communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas 
   serveur ne l'accorde que si une habilitation récursive la couvre — ce qui était déjà le cas. Un
   badge dit la portée effective. C'est le comportement de Tick&.
 
+### Ajouté
+
+- **Un filtre par entité dans l'historique des exécutions.** Il remplace ce que la case
+  « sous-entités » permettait : resserrer sur une entité, sans sa descendance. Il ne propose que les
+  entités qui portent des exécutions visibles — l'arbre complet exige `entity:read`, que la plupart
+  des opérateurs n'ont pas — et n'apparaît qu'à partir de deux.
+
 ## [0.1.0] — 12 septembre 2026
 
 **C'est la première version qu'on peut installer**, et elle est numérotée `0.1.0` : le majeur reste
