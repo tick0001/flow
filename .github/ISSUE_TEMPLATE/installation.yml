@@ -1,0 +1,59 @@
+name: Problème d'installation
+description: Le guide ne mène pas au résultat annoncé
+labels: ['installation']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Le chemin en conteneurs a été déroulé sur une machine vierge, et le guide corrigé
+        de ce qui avait coincé. **Les chemins sans conteneur ne l'ont pas été** — le guide
+        le dit lui-même. Un blocage y est attendu, et le signaler est la contribution la
+        plus utile au projet aujourd'hui.
+
+  - type: dropdown
+    id: chemin
+    attributes:
+      label: Quel chemin
+      options:
+        - Conteneurs — docs/23-installation.md § 2
+        - Linux sans conteneur — docs/23-installation.md § 3.1
+        - Windows Server — docs/23-installation.md § 3.2
+        - Sauvegarde ou restauration — § 4
+        - Montée de version — § 5
+    validations:
+      required: true
+
+  - type: input
+    id: etape
+    attributes:
+      label: À quelle étape
+      description: Le titre ou le numéro de la section où ça bloque.
+      placeholder: '2.4 Changer le mot de passe du rôle applicatif'
+    validations:
+      required: true
+
+  - type: input
+    id: systeme
+    attributes:
+      label: Système
+      placeholder: 'Debian 12, Rocky 9, Windows Server 2022…'
+    validations:
+      required: true
+
+  - type: textarea
+    id: message
+    attributes:
+      label: Le message d'erreur, en entier
+      description: Y compris la partie qui semble n'avoir aucun rapport.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: ecart
+    attributes:
+      label: Écart avec le guide
+      description: >-
+        Avez-vous adapté une commande ? Une base gérée, un PostgreSQL déjà présent, un
+        proxy d'entreprise, un Chromium fourni par la distribution ? Ce sont souvent ces
+        écarts qui expliquent le blocage — et souvent une lacune du guide.

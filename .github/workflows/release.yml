@@ -1,0 +1,219 @@
+name: Archives
+
+# Archives de version, pour les installations sans conteneur.
+#
+# Les images Docker ne suffisent pas : beaucoup d'environnements d'entreprise
+# interdisent un moteur de conteneurs sur un serveur. Ces archives sont
+# autonomes -- code compile et `node_modules` inclus -- pour qu'un serveur de
+# production n'ait jamais besoin de la chaine de construction. Sans elles, le
+# guide d'installation nue en est reduit a dire « construisez ailleurs, puis
+# copiez », ce qui n'est pas une marche a suivre.
+#
+# Une archive par plateforme, et ce n'est pas du zele : `@node-rs/argon2` est un
+# module natif. Un `node_modules` fabrique sur une plateforme ne demarre pas sur
+# une autre.
+#
+# Le worker a la sienne : il pilote un navigateur, tire Playwright et tout ce
+# qui va avec, et une installation qui n'execute rien localement n'a aucune
+# raison de les porter. **Les navigateurs, eux, ne sont pas dans l'archive** :
+# ils s'installent sur la machine cible par `npx playwright install chromium`,
+# et le guide le dit.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version a empaqueter'
+        required: true
+  # Appele par « Publication ». Voir le commentaire de `images.yml` : une
+  # etiquette poussee par un workflow n'en declenche aucun autre.
+  workflow_call:
+    inputs:
+      etiquette:
+        description: 'Etiquette a publier, « v » compris'
+        type: string
+        required: true
+
+concurrency:
+  # Voir `images.yml` : le prefixe separe les deux appels de « Publication ».
+  group: archives-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  construire:
+    name: ${{ matrix.cible }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Runner glibc : couvre Debian, Ubuntu, RHEL, Rocky, SUSE. Les
+          # distributions musl passent par les images Docker, baties sur Alpine.
+          - os: ubuntu-latest
+            cible: linux-x64
+          - os: windows-latest
+            cible: win-x64
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Appele depuis une pull request, `github.ref` designe la fusion
+          # d'essai, pas l'etiquette qu'on publie.
+          ref: ${{ inputs.etiquette || github.ref }}
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Version
+        id: version
+        shell: bash
+        # L'etiquette `v0.1.0` designe la version `0.1.0` : le prefixe sert au
+        # declenchement, pas au nom des fichiers. Il est retire des trois
+        # sources, sans quoi un declenchement manuel produit des archives dont
+        # le nom differe de celles d'une vraie version.
+        run: |
+          numero="${{ inputs.etiquette }}"
+          [ -n "$numero" ] || numero="${{ inputs.version }}"
+          [ -n "$numero" ] || numero="$GITHUB_REF_NAME"
+          echo "numero=${numero#v}" >> "$GITHUB_OUTPUT"
+
+          # Un declenchement manuel empaquette sans creer de version : les
+          # archives restent attachees a l'execution.
+          publication=false
+          case "$GITHUB_REF" in refs/tags/v*) publication=true ;; esac
+          [ -z "${{ inputs.etiquette }}" ] || publication=true
+          echo "publication=$publication" >> "$GITHUB_OUTPUT"
+
+      # Garde-fou. Voir `images.yml` : mieux vaut refuser de publier que publier
+      # une archive qui annonce une version qui n'est pas la sienne.
+      - name: Concordance de la version
+        if: steps.version.outputs.publication == 'true'
+        shell: bash
+        env:
+          ATTENDUE: ${{ steps.version.outputs.numero }}
+        run: |
+          manifeste=$(node -p "require('./apps/api/package.json').version")
+          if [ "$manifeste" != "$ATTENDUE" ]; then
+            echo "::error::L'etiquette annonce $ATTENDUE, le manifeste apps/api/package.json dit $manifeste."
+            exit 1
+          fi
+
+      - name: Construction
+        run: pnpm --filter @flow/api... --filter @flow/worker... build
+
+      # L'interface est un ensemble de fichiers statiques, identique partout :
+      # une seule archive, construite sur le runner Linux.
+      #
+      # Elle est construite ICI, avant `pnpm deploy --prod`, et l'ordre n'est
+      # pas indifferent : `--prod` fait basculer l'espace de travail en mode
+      # production, et la commande pnpm suivante en purge les devDependencies.
+      # Construire l'interface apres, c'est la construire sans TypeScript ni
+      # Vite.
+      - name: Interface
+        if: runner.os == 'Linux'
+        run: |
+          pnpm --filter @flow/web build
+          tar czf flow-web-${{ steps.version.outputs.numero }}.tar.gz -C apps/web/dist .
+
+      # `pnpm deploy` produit une arborescence autonome : les dependances
+      # d'espace de travail y sont recopiees plutot que liees, ce qui rend
+      # l'ensemble transportable sur une machine qui n'a pas le monorepo.
+      #
+      # `node-linker=hoisted` n'est pas un detail de gout. Par defaut, pnpm
+      # place chaque dependance dans `.pnpm/` et pose un lien symbolique a la
+      # racine de `node_modules`. Une archive en contient alors des centaines,
+      # et Windows ne cree pas de lien symbolique sans mode developpeur ni
+      # droits d'administration : l'extraction produit un `node_modules` vide de
+      # tout ce qui compte, et rien ne demarre. Un arbre aplati n'a que des
+      # dossiers reels, donc s'extrait partout.
+      - name: Arborescence de deploiement
+        run: |
+          pnpm --filter @flow/api --prod deploy --legacy --config.node-linker=hoisted deploiement-api
+          pnpm --filter @flow/worker --prod deploy --legacy --config.node-linker=hoisted deploiement-worker
+
+      # `pnpm deploy` recopie tout le dossier du paquet, sources comprises. Une
+      # installation de production n'a que faire des `.ts`, des tsconfig et de
+      # la configuration de test.
+      - name: Elagage
+        shell: bash
+        run: |
+          for dossier in deploiement-api deploiement-worker; do
+            rm -rf "$dossier"/src "$dossier"/tsconfig*.json "$dossier"/*.tsbuildinfo \
+                   "$dossier"/vitest.* "$dossier"/.turbo "$dossier"/coverage
+          done
+
+      - name: Archives (tar.gz)
+        if: runner.os == 'Linux'
+        run: |
+          tar czf flow-api-${{ steps.version.outputs.numero }}-${{ matrix.cible }}.tar.gz -C deploiement-api .
+          tar czf flow-worker-${{ steps.version.outputs.numero }}-${{ matrix.cible }}.tar.gz -C deploiement-worker .
+
+      - name: Archives (zip)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        # `Compress-Archive` met plusieurs minutes sur les dizaines de milliers
+        # de fichiers de l'arborescence, pour une archive bien plus grosse.
+        # `tar` est fourni avec Windows et produit le meme zip en quelques
+        # secondes.
+        run: |
+          tar.exe -a -cf flow-api-${{ steps.version.outputs.numero }}-${{ matrix.cible }}.zip -C deploiement-api .
+          tar.exe -a -cf flow-worker-${{ steps.version.outputs.numero }}-${{ matrix.cible }}.zip -C deploiement-worker .
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: archives-${{ matrix.cible }}
+          path: |
+            flow-api-*.tar.gz
+            flow-api-*.zip
+            flow-worker-*.tar.gz
+            flow-worker-*.zip
+            flow-web-*.tar.gz
+          if-no-files-found: error
+
+  publier:
+    name: Publication
+    needs: construire
+    runs-on: ubuntu-latest
+    # Rien a publier sur un declenchement manuel : les archives restent
+    # attachees a l'execution, telechargeables sans creer de version.
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.etiquette
+
+    permissions:
+      # Seule permission d'ecriture accordee : creer la version et y joindre les
+      # archives. Le workflow ne peut pas modifier le depot.
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          # Nommer ce qu'on veut, plutot que tout prendre. Appele par
+          # « Publication », ce travail partage son execution avec la
+          # construction des images, qui y depose ses enregistrements de
+          # construction : sans ce filtre, des fichiers `.dockerbuild` se
+          # retrouveraient joints a la version publiee.
+          pattern: archives-*
+          path: archives
+
+      # `gh` est preinstalle sur les runners : pas d'action tierce a auditer ni
+      # a epingler pour une operation que la ligne de commande fait en un appel.
+      - name: Version GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          # Appele depuis une pull request, `github.ref_name` nomme la branche.
+          ETIQUETTE: ${{ inputs.etiquette || github.ref_name }}
+        run: |
+          gh release create "$ETIQUETTE" \
+            --title "$ETIQUETTE" \
+            --generate-notes \
+            archives/*/* \
+          || gh release upload "$ETIQUETTE" archives/*/* --clobber

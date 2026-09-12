@@ -1,0 +1,13 @@
+# Les issues vierges restent autorisées : sur un projet jeune, la friction d'un
+# formulaire coûte plus qu'un rapport mal rangé.
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/tick0001/flow/tree/main/docs
+    about: Périmètre, architecture, entités et droits, SDK de bots, plugins, installation.
+  - name: Écrire un bot
+    url: https://github.com/tick0001/flow/blob/main/docs/15-sdk-bots.md
+    about: Le SDK, le schéma des paramètres, et ce qu'un bot reçoit à l'exécution.
+  - name: Signaler une faille de sécurité
+    url: https://github.com/tick0001/flow/security/advisories/new
+    about: En privé, jamais par une issue publique.

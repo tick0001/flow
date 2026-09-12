@@ -1,0 +1,150 @@
+name: Images
+
+# Publication des images sur GitHub Container Registry.
+#
+# **Sur une etiquette de version, jamais sur une branche.** Une image publiee
+# est une image que quelqu'un peut deployer : republier `latest` a chaque
+# fusion ferait tourner en production du code que personne n'a designe comme
+# une version, et une montee deviendrait quelque chose qui arrive plutot que
+# quelque chose qu'on decide.
+#
+# Le declenchement manuel existe pour reconstruire une version sans avoir a
+# deplacer son etiquette.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      etiquette:
+        description: 'Etiquette a republier, « v » compris'
+        required: true
+  # Appele par « Publication », qui etiquette la fusion d'une branche
+  # `release/<version>` dans `main`.
+  #
+  # Une etiquette poussee par un workflow ne declenche aucun autre workflow --
+  # GitHub l'interdit pour eviter les recursions, et le jeton par defaut n'y
+  # peut rien. Sans ce point d'entree, publier depuis une fusion exigerait un
+  # jeton personnel, c'est-a-dire un secret de plus a faire tourner.
+  workflow_call:
+    inputs:
+      etiquette:
+        description: 'Etiquette a publier, « v » compris'
+        type: string
+        required: true
+
+concurrency:
+  # Prefixe litteral : appele par un autre workflow, `github.workflow` nomme
+  # l'appelant, et les deux appels tomberaient dans le meme groupe.
+  group: images-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRE: ghcr.io
+
+jobs:
+  publier:
+    name: ${{ matrix.cible }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # Seule permission d'ecriture accordee : le jeton peut publier des
+      # paquets, rien d'autre. Un jeton plus large n'apporterait rien et
+      # donnerait a un workflow compromis de quoi reecrire le depot.
+      packages: write
+
+    strategy:
+      # Une image qui echoue ne doit pas annuler les autres : savoir laquelle
+      # casse vaut mieux que trois travaux annules.
+      fail-fast: false
+      # Une image a la fois, et ce n'est pas de la prudence excessive : les
+      # quatre cibles sortent du meme Dockerfile et partagent donc leurs
+      # premieres couches. Le cache `type=gha` nomme ses blobs par leur
+      # empreinte, `buildkit-blob-1-sha256:…`, **sans y mettre la portee** --
+      # que la portee soit distincte n'y change rien. Deux constructions
+      # simultanees reservent alors la meme cle, et la seconde echoue sur
+      # « failed to reserve cache ». En serie, les suivantes trouvent les
+      # couches deja en cache : ce qu'on perd en parallelisme, on le regagne en
+      # grande partie.
+      max-parallel: 1
+      matrix:
+        cible: [api, worker, web, migrations]
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Appele depuis une pull request, `github.ref` designe la fusion
+          # d'essai, pas l'etiquette qu'on publie.
+          ref: ${{ inputs.etiquette || github.ref }}
+
+      # Trois declencheurs, une seule version. L'etiquette `v0.1.0` designe la
+      # version `0.1.0` : le prefixe sert au declenchement, pas au nom des
+      # images.
+      - name: Version
+        id: version
+        shell: bash
+        run: |
+          numero="${{ inputs.etiquette }}"
+          [ -n "$numero" ] || numero="$GITHUB_REF_NAME"
+          echo "numero=${numero#v}" >> "$GITHUB_OUTPUT"
+
+      # Garde-fou. La route de sante lit sa version dans le manifeste de l'API.
+      # Si l'etiquette et le manifeste divergent, l'installation annonce une
+      # version qui n'est pas la sienne -- exactement le defaut que cette
+      # lecture remplace. Mieux vaut refuser de publier que publier un mensonge.
+      - name: Concordance de la version
+        shell: bash
+        env:
+          ATTENDUE: ${{ steps.version.outputs.numero }}
+        run: |
+          manifeste=$(node -p "require('./apps/api/package.json').version")
+          if [ "$manifeste" != "$ATTENDUE" ]; then
+            echo "::error::L'etiquette annonce $ATTENDUE, le manifeste apps/api/package.json dit $manifeste."
+            exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Authentification au registre
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRE }}
+          username: ${{ github.actor }}
+          # Jeton fourni par GitHub a chaque execution : aucun secret a creer,
+          # a faire tourner, ni a revoquer.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Etiquettes
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          # L'organisation vient du depot lui-meme : l'ecrire en dur donnerait
+          # une adresse fausse le jour ou le depot change de maison.
+          images: ${{ env.REGISTRE }}/${{ github.repository_owner }}/flow-${{ matrix.cible }}
+          # `value=` plutot que la lecture du ref : appele depuis une pull
+          # request, `github.ref` ne porte aucune version a extraire.
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.numero }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.numero }}
+            type=raw,value=latest,enable=${{ !contains(steps.version.outputs.numero, '-') }}
+
+      - name: Construction et publication
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: ${{ matrix.cible }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Le cache est porte par le registre d'actions : sans lui, chaque
+          # publication reinstalle toutes les dependances depuis zero.
+          #
+          # `ignore-error` par-dessus : le cache est une optimisation, et son
+          # echec ne doit pas faire echouer une publication. Une image deja
+          # poussee -- avec ses trois etiquettes -- dont l'export de cache
+          # echoue ensuite laisserait le travail en rouge pour rien.
+          cache-from: type=gha,scope=flow-${{ matrix.cible }}
+          cache-to: type=gha,mode=max,scope=flow-${{ matrix.cible }},ignore-error=true
+          provenance: false

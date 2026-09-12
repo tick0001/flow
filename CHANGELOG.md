@@ -16,7 +16,7 @@ communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas 
 Rien depuis la 0.1.0. La [feuille de route](docs/06-feuille-de-route.md) dit ce qui vient
 ensuite.
 
-## 0.1.0 — première version installable
+## [0.1.0] — 12 septembre 2026
 
 **C'est la première version qu'on peut installer**, et elle est numérotée `0.1.0` : le majeur reste
 à zéro, donc une version mineure peut encore rompre. Le journal le dira.
@@ -74,3 +74,5 @@ ensuite.
   l'instance qui a reçu la requête. Les autres le prendront à leur redémarrage.
 - Pas d'éditeur de flux visuel, pas d'enregistrement de sessions, pas de pont vers les bots .NET de
   BotManager. Ces trois points sont hors périmètre, et le resteront.
+
+[0.1.0]: https://github.com/tick0001/flow/releases/tag/v0.1.0

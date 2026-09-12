@@ -1,0 +1,78 @@
+name: Anomalie
+description: Quelque chose ne fonctionne pas comme annoncé
+labels: ['anomalie']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci. Les rapports en anglais sont les bienvenus — répondez dans la langue qui
+        vous arrange.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Celle qu'annonce `GET /api/health`, pas celle que vous pensez avoir déployée.
+      placeholder: '0.1.0'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Mode d'installation
+      options:
+        - Conteneurs (Docker ou Podman)
+        - Linux sans conteneur (systemd + nginx)
+        - Windows Server (IIS)
+        - Développement (pnpm dev)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: zone
+    attributes:
+      label: Où
+      description: >-
+        Ce qui sépare le plus vite un défaut du produit d'un problème de déploiement :
+        le worker et l'API sont deux processus, et ils tombent en panne séparément.
+      options:
+        - Interface
+        - API
+        - Exécution d'un bot (worker)
+        - Temps réel — journal, progression, vue en direct
+        - Planification ou clé d'API
+        - Plugin ou annuaire
+        - Installation, sauvegarde, montée de version
+    validations:
+      required: true
+
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Ce qui devait se passer, et ce qui s'est passé
+      description: Les deux, même si le second paraît évident.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduire
+    attributes:
+      label: Comment le reproduire
+      placeholder: |
+        1. Déposer le bot d'exemple dans bots/
+        2. Le lancer depuis l'interface avec le paramètre …
+        3. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: journaux
+    attributes:
+      label: Journaux
+      description: >-
+        `docker compose logs api worker`, ou `journalctl -u flow-api -u flow-worker`
+        selon l'installation. **Les deux** : une exécution qui ne démarre pas se lit
+        dans le worker, pas dans l'API. Retirez les mots de passe et les adresses
+        internes.
+      render: text
