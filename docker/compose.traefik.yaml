@@ -32,6 +32,12 @@
 #
 #   API_URL=https://flow.exemple.fr
 #   WEB_URL=https://flow.exemple.fr
+#
+# Les trois dernieres se lisent dans la configuration du Traefik deja en place,
+# et un nom de resolveur qui n'existe pas ne se voit pas tout de suite : Traefik
+# cree quand meme le routeur, mais presente son certificat auto-signe de secours.
+# Le site repond alors en HTTPS, et le navigateur le dit « non securise ». Voir
+# `docs/23-installation.md`, section 2.7.
 
 services:
   web:

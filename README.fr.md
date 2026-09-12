@@ -9,6 +9,10 @@ qu'ils font — et une trace de ce qui s'est passé quand ils cassent.
 [![Licence](https://img.shields.io/badge/licence-AGPL--3.0-blue)](LICENSE)
 [![CI](https://github.com/tick0001/flow/actions/workflows/ci.yml/badge.svg)](https://github.com/tick0001/flow/actions/workflows/ci.yml)
 
+**[tickand.fr/flow](https://tickand.fr/flow/)** ·
+**[Essayer la démonstration](https://flow-demo.tickand.fr)** — connectez-vous avec `sophie` /
+`flow`. Tout est remis à zéro à chaque heure, et aucun bot livré ne prend d'adresse.
+
 Membre de la collection **tick&**, aux côtés de [Tick&](https://tickand.fr), outil de ticketing
 ITSM, dont Flow& reprend la pile technique, les conventions et l'écriture visuelle.
 

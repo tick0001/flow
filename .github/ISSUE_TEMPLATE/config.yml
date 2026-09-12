@@ -2,6 +2,9 @@
 # formulaire coûte plus qu'un rapport mal rangé.
 blank_issues_enabled: true
 contact_links:
+  - name: Essayer avant de signaler
+    url: https://flow-demo.tickand.fr
+    about: 'Démonstration publique — sophie / flow, remise à zéro chaque heure.'
   - name: Documentation
     url: https://github.com/tick0001/flow/tree/main/docs
     about: Périmètre, architecture, entités et droits, SDK de bots, plugins, installation.
