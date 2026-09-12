@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="Flow& — automatisation navigateur">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="Flow&amp; — automatisation navigateur">
   <title>Flow&amp;</title>
 
   <!--
     L'image de previsualisation sociale, aux couleurs de l'application.
 
     Ecrite a la main plutot que dessinee : elle n'a que du texte, deux filets et
-    un carre, et un fichier de quelques lignes se relit et se corrige -- la ou un
+    un carre, et un fichier de quelques lignes se relit et se corrige, la ou un
     export d'outil graphique se reprend entierement.
 
     1280x640 : le format que GitHub, Slack et les cartes Open Graph attendent.

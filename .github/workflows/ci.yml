@@ -98,6 +98,12 @@ jobs:
       - name: Format
         run: pnpm format:check
 
+      # Un SVG invalide ne casse aucune construction : il ne s'affiche pas, et
+      # personne ne le voit tant que quelqu'un ne regarde pas l'onglet. Voir
+      # `scripts/verifier-svg.mjs`.
+      - name: SVG
+        run: pnpm verifier:svg
+
       - name: Build
         run: pnpm build
 

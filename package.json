@@ -26,6 +26,7 @@
     "parcours": "pnpm --filter @flow/e2e parcours",
     "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,yaml,yml}\"",
+    "verifier:svg": "node scripts/verifier-svg.mjs",
     "services:up": "docker compose -f docker/compose.yaml up -d",
     "services:down": "docker compose -f docker/compose.yaml down",
     "services:reset": "docker compose -f docker/compose.yaml down -v && pnpm services:up",
