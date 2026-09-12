@@ -194,7 +194,7 @@ CMD ["node", "packages/db/dist/migrate.js"]
 # cookie de session d'etre `SameSite=Strict` sans rien configurer, et ce qui
 # evite d'ouvrir CORS.
 # -----------------------------------------------------------------------------
-FROM nginx:1.29-alpine AS web
+FROM nginx:1.31-alpine AS web
 
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
