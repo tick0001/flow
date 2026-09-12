@@ -6,6 +6,7 @@ import { BotsModule } from './bots/bots.module.js';
 import { EntitiesModule } from './entities/entities.module.js';
 import { ExecutionsModule } from './executions/executions.module.js';
 import { HealthModule } from './health/health.module.js';
+import { InstanceModule } from './instance/instance.module.js';
 import { QueueModule } from './queue/queue.module.js';
 import { SchedulesModule } from './schedules/schedules.module.js';
 import { ApiKeysModule } from './apikeys/apikeys.module.js';
@@ -21,6 +22,7 @@ import { StorageModule } from './storage/storage.module.js';
     AuthModule,
     QueueModule,
     HealthModule,
+    InstanceModule,
     EntitiesModule,
     AdminModule,
     BotsModule,

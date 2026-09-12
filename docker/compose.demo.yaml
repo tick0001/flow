@@ -1,0 +1,73 @@
+# Surcouche de demonstration publique.
+#
+# A superposer, jamais a utiliser seule -- et **jamais sur une installation
+# reelle** : elle vide la base toutes les heures.
+#
+#   docker compose -f docker/compose.production.yaml \
+#                  -f docker/compose.traefik.yaml \
+#                  -f docker/compose.demo.yaml up -d
+#
+# Elle fait quatre choses : elle affiche les identifiants sur l'ecran de
+# connexion, elle ferme les routes qu'un visiteur administrateur ne doit pas
+# ecrire, elle recharge le jeu de demonstration a chaque heure ronde, et elle
+# efface les captures produites entre-temps.
+#
+# Ce que la demonstration de Flow& n'a pas a craindre, contrairement a d'autres :
+# **aucun bot livre ne prend d'adresse.** Leurs parametres sont des listes
+# fermees, des booleens et des entiers bornes. Un visiteur ne peut donc pas faire
+# visiter au serveur ce qu'il veut -- ni le reseau interne de la machine, ni un
+# site tiers depuis son adresse IP. C'est la raison d'etre de cette contrainte,
+# et elle est posee dans les bots eux-memes plutot qu'ici : un refus pose dans la
+# surcouche ne protegerait que la demonstration.
+
+services:
+  # L'interface, augmentee de refus deposes dans le point d'extension de sa
+  # configuration. Voir docker/nginx-demo.conf pour le detail et la raison.
+  web:
+    volumes:
+      - ./nginx-demo.conf:/etc/nginx/flow-extra/demo.conf:ro
+
+  api:
+    environment:
+      # Les identifiants s'affichent sur l'ecran de connexion. Sans cela, un
+      # visiteur arrive devant un formulaire sans savoir quoi taper, et repart.
+      #
+      # Un seul compte est nomme, celui qui montre le plus sans etre
+      # administrateur. Enumerer les cinq et ce que chacun demontre encombrerait
+      # l'ecran au moment ou le visiteur veut entrer : le site le fait mieux, et
+      # l'adresse y est cliquable.
+      #
+      # `|-` et non `>-` : le bloc plie replierait les retours a la ligne en
+      # espaces.
+      LOGIN_BANNER: |-
+        Démonstration — connectez-vous avec sophie / flow.
+        Les cinq comptes et ce que chacun montre : https://flowand.fr/#comptes
+        Remise à zéro chaque heure. · Public demo — sign in with sophie / flow, the five accounts are explained on the site, everything resets on the hour.
+
+  # Remise a zero horaire.
+  #
+  # `extends` reprend l'image et l'environnement complet de l'API : le script
+  # d'amorcage a besoin de la meme configuration -- base, Redis, stockage. Les
+  # recopier ici les aurait laisses diverger au premier changement.
+  demo-reset:
+    extends:
+      file: compose.production.yaml
+      service: api
+    restart: unless-stopped
+
+    # La sonde heritee interroge le port 3100 du conteneur, ou rien n'ecoute
+    # ici : sans cette ligne, le conteneur serait marque malsain en permanence.
+    healthcheck:
+      disable: true
+
+    volumes:
+      # Les memes volumes que l'API -- l'heritage les apporte --, plus la boucle.
+      # Elle vit dans un fichier plutot que dans un champ `command` : une boucle
+      # shell ecrite en YAML demande d'echapper chaque `$`, se relit mal, et
+      # Compose la decoupe de facon surprenante.
+      - bots:/app/bots
+      - plugins:/app/plugins
+      - stockage:/donnees/stockage
+      - ./demo-reset.sh:/demo-reset.sh:ro
+
+    entrypoint: ['/bin/sh', '/demo-reset.sh']

@@ -11,6 +11,27 @@ tant que le numéro majeur est `0`, une version mineure peut rompre.
 Ce qui ne concerne que le dépôt — intégration continue, outillage de publication, fichiers de
 communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas à qui y contribue.
 
+## Non publié
+
+### Ajouté
+
+- **Une surcouche de démonstration publique.** `make demo` superpose à la pile de production un
+  jeu de données rechargé à chaque heure ronde, les identifiants affichés sur l'écran de connexion,
+  et des refus nginx sur les routes qu'un visiteur administrateur ne doit pas écrire — plugins,
+  règles de bots, annuaire, clés d'API. La lecture y reste ouverte. Voir
+  [le guide](docs/23-installation.md#6-une-instance-de-démonstration-publique).
+
+- **Une surcouche Traefik**, `compose.traefik.yaml` : elle ne lance pas Traefik, elle pose les
+  étiquettes sur le conteneur `web` et retire le port publié.
+
+- **`db:seed`**, le jeu de démonstration : sept entités, cinq comptes, un mois d'historique.
+
+- **`LOGIN_BANNER`** : un message affiché avant toute authentification, rendu comme du texte, avec
+  les adresses cliquables.
+
+- **Un point d'extension nginx**, `/etc/nginx/flow-extra/*.conf`. Un déploiement particulier y pose
+  ses différences sans recopier la configuration de base — et sans qu'elles divergent.
+
 ## [0.2.0] — 12 septembre 2026
 
 ### Sécurité

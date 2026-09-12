@@ -121,6 +121,19 @@ const envSchema = z.object({
    */
   EXECUTION_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(90),
 
+  /**
+   * Message affiche sur l'ecran de connexion, avant toute authentification.
+   *
+   * Vide par defaut. Il sert aux installations qui doivent dire quelque chose
+   * avant qu'on entre -- une mention d'usage interne, ou, sur la demonstration
+   * publique, les identifiants : sans eux, un visiteur arrive devant un
+   * formulaire sans savoir quoi taper, et repart.
+   *
+   * Rendu comme du texte, jamais comme du HTML : c'est du contenu de
+   * configuration affiche sur une page que tout le monde atteint.
+   */
+  LOGIN_BANNER: z.string().trim().max(500).optional(),
+
   DEFAULT_LOCALE: z.enum(['fr', 'en']).default('fr'),
   LOG_LEVEL: z.enum(['error', 'warn', 'log', 'debug', 'verbose']).default('log'),
 

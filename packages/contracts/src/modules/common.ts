@@ -78,3 +78,15 @@ export const pageSchema = <T extends z.ZodTypeAny>(item: T) =>
     items: z.array(item),
     nextCursor: z.string().nullable(),
   });
+
+/**
+ * Ce que l'instance dit d'elle-meme avant toute authentification.
+ *
+ * Rien de sensible n'y transite : le message est ecrit par l'exploitant dans sa
+ * configuration, et il est deja destine a etre lu par quiconque atteint l'ecran
+ * de connexion.
+ */
+export const instanceInfoSchema = z.object({
+  banner: z.string().nullable(),
+});
+export type InstanceInfo = z.infer<typeof instanceInfoSchema>;
