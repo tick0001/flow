@@ -31,7 +31,7 @@
     "services:down": "docker compose -f docker/compose.yaml down",
     "services:reset": "docker compose -f docker/compose.yaml down -v && pnpm services:up",
     "db:migrate": "pnpm --filter @flow/db db:migrate",
-        "db:init": "pnpm --filter @flow/api db:init",
+    "db:init": "pnpm --filter @flow/api db:init",
     "db:reset": "pnpm services:reset && pnpm db:migrate && pnpm db:init",
     "navigateurs": "pnpm --filter @flow/worker exec playwright install --with-deps chromium",
     "openapi": "pnpm --filter @flow/api openapi",
