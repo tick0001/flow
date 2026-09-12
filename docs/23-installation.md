@@ -318,7 +318,61 @@ en « Refusé » avec ce motif, et l'application démarre sans lui plutôt que d
 
 ---
 
-## 6. Quand ça ne démarre pas
+## 6. Une instance de démonstration publique
+
+Le dépôt porte de quoi monter une démonstration ouverte à tous, comme celle de
+[flowand.fr](https://flowand.fr). C'est une **surcouche** à la pile de production, jamais une
+installation à part :
+
+```bash
+make demo          # production + Traefik + surcouche de démonstration
+make demo-locale   # la même sans Traefik, sur FLOW_WEB_PORT, pour essayer
+```
+
+**Ne la superposez jamais à une installation réelle : elle vide la base toutes les heures.**
+
+Elle fait quatre choses.
+
+**Elle affiche les identifiants** sur l'écran de connexion, par `LOGIN_BANNER`. Sans eux, un
+visiteur arrive devant un formulaire sans savoir quoi taper, et repart.
+
+**Elle ferme en écriture ce qu'un visiteur administrateur ne doit pas atteindre** — car sur une
+démonstration, les identifiants sont publiés : tout le monde est administrateur. Les refus sont
+posés dans le relais nginx, jamais dans l'application, si bien qu'ils tiennent même le jour où une
+route nouvelle oublie sa garde :
+
+| Route fermée en écriture | Pourquoi                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `/api/plugins`           | Un plugin s'exécute dans le processus de l'API, avec ses privilèges. L'installer, c'est déployer du code.     |
+| `/api/bots/regles`       | Un visiteur pourrait fermer le catalogue pour tous les suivants.                                              |
+| `/api/directory`         | Une règle d'annuaire est une élévation de privilèges différée, et l'annuaire se configure avec un hôte libre. |
+| `/api/apikeys`           | Une clé survit à la session de qui l'a créée et déclenche sans passer par l'écran.                            |
+
+La lecture reste ouverte partout : les écrans restent visibles, les listes s'affichent.
+
+**Elle recharge le jeu de démonstration à chaque heure ronde**, et efface les captures produites
+entre-temps — sans quoi le volume grossit sans fin et la démonstration héberge durablement des
+fichiers que personne n'a relus.
+
+**Elle rejoue quatre exécutions réelles** après chaque amorçage. Le jeu de données fabrique
+l'historique mais ne fabrique **aucune pièce** : une capture inventée serait une capture de rien, et
+un lien de téléchargement vers un fichier absent. Ces quatre-là passent par la file, le worker et un
+vrai Chromium — dont une qui échoue exprès, pour que l'écran d'historique ait une capture et une
+trace à montrer. Elles vérifient la pile au passage : une démonstration dont le worker est mort
+depuis trois jours ressemble à une démonstration qui marche, jusqu'à ce qu'un visiteur clique.
+
+### Ce dont Flow& n'a pas à se protéger, et pourquoi
+
+**Aucun bot livré ne prend d'adresse.** Leurs paramètres sont des listes fermées, des booléens et
+des entiers bornés. Un visiteur ne peut donc pas faire visiter au serveur ce qu'il veut — ni le
+réseau interne de la machine, ni un site tiers depuis son adresse IP et sous votre nom de domaine.
+
+C'est la contrainte la plus importante de tout ce dispositif, et elle est posée **dans les bots
+eux-mêmes** plutôt que dans la surcouche : un refus posé ici ne protégerait que la démonstration, et
+laisserait le piège ouvert pour qui écrit son premier bot en copiant les nôtres. Voir
+[le SDK](15-sdk-bots.md).
+
+## 7. Quand ça ne démarre pas
 
 | Symptôme                                                   | Cause la plus fréquente                                                         |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------- |

@@ -1,23 +1,66 @@
 import { defineBot, z } from '@flow/bot-sdk';
 
 /**
- * Bot de reference.
+ * Le bot minimal : celui qu'on lit en premier, et celui que les tests lancent.
  *
- * Il sert trois choses a la fois, et c'est voulu : il montre a un auteur ce
- * qu'on attend de lui, il exerce chaque point du SDK, et il tourne en test
- * d'integration permanent -- si le contrat casse, c'est lui qui le dit.
+ * Il ne sort pas de la machine. La page qu'il visite, il la sert lui-meme --
+ * `page.setContent` plutot qu'un `goto` vers une adresse. Deux raisons, et les
+ * deux comptent :
  *
- * Ce qu'il fait est deliberement banal : ouvrir une page, en lire le titre,
- * compter des elements. Un exemple qui ferait quelque chose d'utile inviterait a
- * le copier sans le lire.
+ *  - **il tourne partout**, y compris sur une installation coupee d'Internet,
+ *    derriere un proxy d'entreprise, ou pendant une panne du site qu'il aurait
+ *    visite. C'est ce qui en fait une sonde honnete : quand il echoue, c'est
+ *    Flow& qui a un probleme, pas le reseau ;
+ *  - **les parcours de bout en bout s'appuient dessus.** Une campagne
+ *    d'integration continue qui depend d'un site tiers rougit les jours ou ce
+ *    site est lent, et on finit par ne plus la regarder.
+ *
+ * Les trois autres bots livres -- `exemple.catalogue`, `exemple.connexion`,
+ * `exemple.epreuves` -- visitent de vrais sites publics, et montrent ce que
+ * Flow& sait faire. Celui-ci montre ce qu'un bot *est*.
+ *
+ * **Aucun parametre libre.** Ni adresse, ni selecteur, ni texte : Flow& se
+ * demontre publiquement, et un bot qui ouvre l'adresse qu'on lui donne fait du
+ * serveur qui l'heberge un relais ouvert -- vers son reseau interne comme vers
+ * n'importe quel site tiers, depuis son adresse IP. Un auteur de bot qui a
+ * besoin d'une adresse variable la declare ; les bots livres avec le produit,
+ * non.
  */
+
+/** Ce que le bot affiche, selon le decor demande. */
+const DECORS = {
+  liste: {
+    titre: 'Inventaire de démonstration',
+    corps: `
+      <h1>Inventaire</h1>
+      <ul id="articles">
+        <li data-reference="A-100">Tournevis cruciforme — 4,90 €</li>
+        <li data-reference="A-101">Marteau de menuisier — 12,50 €</li>
+        <li data-reference="A-102">Niveau à bulle 40 cm — 9,80 €</li>
+        <li data-reference="A-103">Mètre ruban 5 m — 6,20 €</li>
+        <li data-reference="A-104">Clé à molette — 11,40 €</li>
+      </ul>`,
+  },
+  tableau: {
+    titre: 'Relevé de démonstration',
+    corps: `
+      <h1>Relevé</h1>
+      <table id="releve">
+        <tr data-reference="L-1"><td>Janvier</td><td>1 240</td></tr>
+        <tr data-reference="L-2"><td>Février</td><td>1 108</td></tr>
+        <tr data-reference="L-3"><td>Mars</td><td>1 471</td></tr>
+      </table>`,
+  },
+} as const;
+
 export default defineBot({
   id: 'exemple.bonjour',
   name: 'Bonjour',
-  description: "Ouvre une page, en lit le titre et compte des elements. Sert d'exemple et de test.",
-  version: '1.0.0',
+  description:
+    "Le bot minimal : il sert sa propre page, la lit, et compte ce qu'elle contient. Ne sort pas de la machine.",
+  version: '2.0.0',
   author: 'Flow&',
-  tags: ['exemple'],
+  tags: ['exemple', 'hors-ligne'],
 
   /**
    * Les parametres, et rien d'autre.
@@ -27,27 +70,44 @@ export default defineBot({
    * schema. Un parametre sans description arrive a l'ecran sans explication.
    */
   parameters: z.object({
-    url: z.url().describe('Adresse de la page a ouvrir.'),
-    selecteur: z
-      .string()
-      .min(1)
-      .default('a')
-      .describe('Selecteur CSS des elements a compter. Par defaut : les liens.'),
-    attendreReseau: z
-      .boolean()
-      .default(false)
-      .describe(
-        'Attendre que le reseau se calme avant de lire. Utile sur une page qui charge son contenu en JavaScript, inutile ailleurs -- et lent sur une page qui garde une connexion ouverte.',
-      ),
+    decor: z
+      .enum(Object.keys(DECORS) as [keyof typeof DECORS])
+      .default('liste')
+      .describe('Page à servir puis à lire.'),
+    pause: z
+      .number()
+      .int()
+      .min(0)
+      .max(10)
+      .default(0)
+      .describe('Secondes à attendre avant de lire. Utile pour voir la vue en direct bouger.'),
   }),
 
   async run({ params, page, log, progress, signal }) {
-    progress('Ouverture de la page', 10);
-    log('info', `Navigation vers ${params.url}`);
+    const decor = DECORS[params.decor];
 
-    await page.goto(params.url, {
-      waitUntil: params.attendreReseau ? 'networkidle' : 'load',
-    });
+    progress('Ouverture de la page', 20);
+
+    // `setContent` et non `goto` : la page est celle du bot, servie depuis sa
+    // propre chaine. Playwright la traite comme n'importe quelle autre -- la vue
+    // en direct la montre, les selecteurs y fonctionnent, la capture d'echec la
+    // saisit.
+    await page.setContent(
+      `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${decor.titre}</title>` +
+        `<style>body{font:16px system-ui;margin:2rem;background:#f7f4ee;color:#14120f}` +
+        `h1{font-size:1.3rem}li,td{padding:.25rem .5rem}table{border-collapse:collapse}` +
+        `td{border:1px solid #e2dbcf}</style></head><body>${decor.corps}</body></html>`,
+      { waitUntil: 'load' },
+    );
+
+    if (params.pause > 0) {
+      log('info', `Pause de ${String(params.pause)} seconde(s).`);
+
+      // `waitForTimeout` est un mauvais reflexe dans un vrai bot -- on attend un
+      // element, pas une duree. Ici c'est le sujet : le parametre existe pour
+      // laisser le temps de regarder la vue en direct.
+      await page.waitForTimeout(params.pause * 1000);
+    }
 
     // Entre deux etapes plutot que dans une boucle : c'est ici que
     // l'interruption a une chance d'etre vue sans qu'on ait a instrumenter
@@ -55,28 +115,24 @@ export default defineBot({
     // brutalement.
     signal.throwIfAborted();
 
-    progress('Lecture du titre', 50);
+    progress('Lecture', 60);
+
     const titre = await page.title();
+    const references = await page.$$eval('[data-reference]', (elements) =>
+      elements.map((element) => ({
+        reference: element.getAttribute('data-reference') ?? '',
+        texte: (element.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      })),
+    );
 
-    log('info', `Titre : ${titre}`);
+    log('info', `Titre lu : ${titre}`);
+    log('info', `${String(references.length)} ligne(s) trouvée(s).`);
 
-    progress('Comptage des elements', 80);
-    // `count()` attend de lui-meme que le DOM soit stable : c'est exactement ce
-    // que la facade de l'outil precedent obligeait a reecrire a la main, avec
-    // des attentes explicites et des delais devines.
-    const nombre = await page.locator(params.selecteur).count();
-
-    if (nombre === 0) {
-      // Un avertissement et non une erreur : zero element est un resultat, pas
-      // une panne. Le distinguer laisse l'appelant decider.
-      log('warning', `Aucun element ne correspond a « ${params.selecteur} ».`);
-    }
-
-    progress('Termine', 100);
+    progress('Terminé', 100);
 
     return {
-      message: `« ${titre} » — ${String(nombre)} element(s) pour « ${params.selecteur} ».`,
-      output: { titre, url: page.url(), selecteur: params.selecteur, nombre },
+      message: `${String(references.length)} ligne(s) sur « ${titre} ».`,
+      output: { titre, lignes: references.length, references },
     };
   },
 });

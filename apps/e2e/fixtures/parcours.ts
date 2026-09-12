@@ -48,49 +48,54 @@ export async function seConnecter(page: Page, identifiant: string): Promise<void
 }
 
 /**
- * Nom du bot d'exemple que le depot livre.
+ * Nom du bot que les parcours lancent.
  *
- * Les parcours en ont besoin d'un, et celui-la est le seul dont l'existence soit
- * garantie. Le nommer ici plutot que de prendre « le premier de la liste » rend
- * l'echec lisible le jour ou il manque : « Bonjour introuvable » designe la
- * cause, la ou une carte absente ne designe rien.
+ * `exemple.bonjour` et pas un autre, et ce n'est pas indifferent : **il ne sort
+ * pas de la machine**. Il sert sa propre page plutot que d'en visiter une, si
+ * bien qu'une campagne ne depend ni du reseau public, ni de la disponibilite
+ * d'un site tiers. Les trois autres bots livres visitent de vrais sites -- ils
+ * montrent le produit, ils ne verifient pas Flow&.
+ *
+ * Le nommer ici plutot que de prendre « le premier de la liste » rend l'echec
+ * lisible le jour ou il manque : « Bonjour introuvable » designe la cause, la ou
+ * une carte absente ne designe rien.
  */
 export const BOT = 'Bonjour';
 
 /**
- * L'adresse que le bot visite pendant les parcours : **l'application elle-meme**.
- *
- * Une premiere version pointait sur `example.com`. La campagne dependait alors
- * du reseau public : un DNS lent ou une coupure faisait echouer le parcours du
- * cycle d'execution, et l'echec designait le bot plutot que la cause. Une suite
- * de parcours qui tombe pour une raison exterieure finit par ne plus etre lue.
- *
- * L'interface est deja lancee -- la campagne l'exige -- et elle porte des liens,
- * ce que le selecteur du bot cherche.
- */
-export const ADRESSE_VISITEE = process.env['E2E_BASE_URL'] ?? 'http://localhost:5273';
-
-/**
- * Lance le bot d'exemple depuis le catalogue, et attend sa page d'execution.
+ * Lance le bot depuis le catalogue, et attend sa page d'execution.
  *
  * Passe par l'ecran plutot que par l'API : le formulaire est **deduit du schema
  * du bot**, et un parcours qui appellerait l'API sauterait cette deduction --
  * qui est precisement l'endroit ou une divergence entre le manifeste et le
  * formulaire se verrait.
+ *
+ * Aucun champ n'est rempli : les deux parametres du bot ont une valeur par
+ * defaut, et les laisser telles quelles verifie au passage que le formulaire les
+ * reprend bien du manifeste. Un parcours qui les ecraserait ne dirait rien de
+ * ce cas-la.
  */
-export async function lancerLeBot(page: Page, url = ADRESSE_VISITEE): Promise<void> {
+export async function lancerLeBot(page: Page): Promise<void> {
   await page.goto('/bots');
 
-  await expect(page.getByText(BOT).first()).toBeVisible();
+  // Le catalogue en livre quatre : designer « le premier » ou « le dernier »
+  // bouton Lancer marchait par accident, au gre de l'ordre de lecture du
+  // dossier des bots. Tout se passe donc **dans la carte du bot voulu**, qu'on
+  // atteint par son titre : l'en-tete porte le titre, la carte porte l'en-tete
+  // et le formulaire.
+  const entete = page.getByRole('heading', { level: 3 }).filter({ hasText: BOT }).first();
 
-  // Le depot ne livre qu'un bot : le premier bouton « Lancer » est le sien. Le
-  // jour ou il y en aura deux, ce parcours dira lequel il veut.
-  await page.getByRole('button', { name: 'Lancer', exact: true }).first().click();
+  await expect(entete).toBeVisible();
 
-  await page.getByLabel('url').fill(url);
-  await page.getByLabel('selecteur').fill('a');
+  const carte = entete.locator('xpath=../..');
+  const lancer = carte.getByRole('button', { name: 'Lancer', exact: true });
 
-  await page.getByRole('button', { name: 'Lancer', exact: true }).last().click();
+  // Le premier clic ouvre le formulaire, et le bouton d'en-tete devient
+  // « Annuler » : le second `Lancer` de la carte est donc la soumission, et il
+  // n'y en a pas deux.
+  await lancer.click();
+  await lancer.click();
+
   await page.waitForURL(/\/executions\/[0-9a-f-]{36}/, { timeout: 30_000 });
 }
 

@@ -106,8 +106,9 @@ pnpm dev              # API :3100, interface :5273, worker
 
 Then <http://localhost:5273>. The first sign-in forces a password change.
 
-A reference bot is already dropped in [`bots/`](bots/exemple-bonjour): build it (`pnpm build`), open
-**Bots**, and run it against an address of your choice.
+Four bots are already dropped in [`bots/`](bots/): build them (`pnpm build`), open **Bots**, and run
+them. None of them takes an address — their parameters are closed lists, and `exemple-bonjour` does
+not even leave the machine. See [the SDK](docs/15-sdk-bots.md).
 
 The worker installs its browsers separately, and never at startup: an application that downloads
 Chromium on first launch turns a corporate proxy outage into an application that will not start.

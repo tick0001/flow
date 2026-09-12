@@ -27,8 +27,32 @@ export default defineBot({
 });
 ```
 
-Le bot de référence [`bots/exemple-bonjour`](../bots/exemple-bonjour) exerce chaque point du SDK et
-tourne en test permanent : si le contrat casse, c'est lui qui le dit.
+### Les quatre bots livrés
+
+| Bot                                              | Ce qu'il montre                                                        |
+| ------------------------------------------------ | ---------------------------------------------------------------------- |
+| [`exemple-bonjour`](../bots/exemple-bonjour)     | Le minimum. **Il ne sort pas de la machine** : il sert sa propre page. |
+| [`exemple-catalogue`](../bots/exemple-catalogue) | Pagination, extraction structurée, fichier produit.                    |
+| [`exemple-connexion`](../bots/exemple-connexion) | Formulaire, session ouverte, vérification qu'elle a pris.              |
+| [`exemple-epreuves`](../bots/exemple-epreuves)   | Dialogue, contenu différé, cadres — et un échec volontaire.            |
+
+`exemple-bonjour` exerce chaque point du SDK et tourne en test permanent : si le contrat casse,
+c'est lui qui le dit. Il est hors ligne à dessein — une campagne d'intégration continue qui dépend
+d'un site tiers rougit les jours où ce site est lent, et on finit par ne plus la regarder.
+
+### Aucun des quatre ne prend d'adresse, et c'est délibéré
+
+Leurs paramètres sont des listes fermées, des booléens et des entiers bornés. Jamais de texte
+libre, jamais d'URL.
+
+Flow& se démontre publiquement, et **un bot qui ouvre l'adresse qu'on lui donne fait du serveur qui
+l'héberge un relais ouvert** : vers son réseau interne comme vers n'importe quel site tiers, depuis
+son adresse IP et sous son nom de domaine. Sur une installation où vous choisissez qui lance quoi,
+la question ne se pose pas de la même façon — un bot qui a besoin d'une adresse variable la déclare.
+Les bots livrés avec le produit, non.
+
+Les trois bots qui sortent visitent des bacs à sable publiés pour cet usage — `books.toscrape.com`,
+`quotes.toscrape.com`, `the-internet.herokuapp.com` —, jamais un site qui n'a rien demandé.
 
 ## 2. La `Page` est une vraie `Page` Playwright
 

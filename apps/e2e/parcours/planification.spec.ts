@@ -1,4 +1,4 @@
-import { ADRESSE_VISITEE, BOT, expect, seConnecter, test } from '../fixtures/parcours.js';
+import { BOT, expect, seConnecter, test } from '../fixtures/parcours.js';
 
 /**
  * La planification, vue du navigateur.
@@ -27,9 +27,10 @@ test.describe('Parcours : la planification', () => {
     await page.getByLabel('Cadence').fill('0 2 * * *');
 
     // Les champs du bot n'apparaissent qu'une fois le bot choisi : ils sont
-    // deduits de son schema, exactement comme au lancement manuel.
-    await page.getByLabel('url').fill(ADRESSE_VISITEE);
-    await page.getByLabel('selecteur').fill('a');
+    // deduits de son schema, exactement comme au lancement manuel. Leurs valeurs
+    // par defaut suffisent -- les laisser telles quelles verifie au passage que
+    // le formulaire les reprend bien du manifeste.
+    await expect(page.getByRole('combobox').filter({ hasText: 'liste' })).toBeVisible();
 
     // L'apercu vient du serveur : c'est lui qui dit que la cadence a ete
     // comprise, et pas seulement acceptee par le formulaire.

@@ -1,0 +1,77 @@
+# Surcouche Traefik.
+#
+# **Ce fichier ne lance pas Traefik.** Il ne declare aucun service : il pose
+# seulement les etiquettes sur le conteneur `web`, le rattache au reseau du
+# Traefik deja en place, et retire le port publie. Le Traefik reste le votre,
+# dans son propre compose, avec sa propre configuration -- on ne fait que lui
+# donner un conteneur de plus a router.
+#
+# A superposer au fichier de production, jamais a utiliser seule :
+#
+#   docker compose -f docker/compose.production.yaml \
+#                  -f docker/compose.traefik.yaml up -d
+#
+# Il n'y a rien a fusionner avec le nginx du conteneur `web` : les deux ne font
+# pas le meme metier. Le nginx interne sert les fichiers de l'interface, replie
+# les routes du navigateur sur `index.html`, et relaie `/api/` vers l'API -- ce
+# qui garde l'interface et l'API sur la **meme origine**, condition pour que le
+# cookie de session, `httpOnly` et `SameSite`, voyage. Traefik, lui, termine le
+# TLS et route un nom de domaine vers le conteneur. Traefik devant, nginx
+# dedans : chacun a sa place.
+#
+# Variables a renseigner dans `docker/.env`, en accord avec la pile Traefik deja
+# en place -- les valeurs par defaut ci-dessous sont les conventions les plus
+# repandues, pas les votres :
+#
+#   FLOW_HOST=flow.exemple.fr
+#   TRAEFIK_NETWORK=traefik
+#   TRAEFIK_ENTRYPOINT=websecure
+#   TRAEFIK_CERTRESOLVER=letsencrypt
+#
+# Et, dans le meme fichier, les adresses publiques en `https://` :
+#
+#   API_URL=https://flow.exemple.fr
+#   WEB_URL=https://flow.exemple.fr
+
+services:
+  web:
+    # Le port publie disparait. Le laisser ouvrirait l'application en clair sur
+    # le port de l'hote, a cote du TLS de Traefik -- et comme le cookie de
+    # session est pose avec `Secure` en production, une connexion par ce
+    # chemin-la echouerait sans message : le navigateur refuserait simplement
+    # d'enregistrer le cookie.
+    #
+    # `!reset` demande Compose 2.24 ou plus. Sur une version anterieure,
+    # supprimer cette ligne et poser `FLOW_WEB_BIND=127.0.0.1` dans
+    # `docker/.env` : le port n'ecoute alors que sur la boucle locale.
+    ports: !reset []
+
+    # Deux reseaux, et les deux sont necessaires : celui de Traefik pour etre
+    # joignable depuis le relais, celui du projet pour continuer a joindre
+    # `api`. Declarer `networks` sur un service remplace l'appartenance
+    # implicite au reseau par defaut, d'ou la mention explicite de `default`.
+    networks:
+      - default
+      - traefik
+
+    labels:
+      - traefik.enable=true
+
+      # Obligatoire des qu'un conteneur est sur plusieurs reseaux : sans cette
+      # ligne, Traefik choisit une adresse au hasard et tombe une fois sur deux
+      # sur celle qu'il ne peut pas joindre.
+      - traefik.docker.network=${TRAEFIK_NETWORK:-traefik}
+
+      - traefik.http.routers.flow.rule=Host(`${FLOW_HOST:?renseignez FLOW_HOST}`)
+      - traefik.http.routers.flow.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.flow.tls=true
+      - traefik.http.routers.flow.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+
+      # Le port interne du conteneur, pas celui de l'hote : il n'y en a plus.
+      - traefik.http.services.flow.loadbalancer.server.port=80
+
+networks:
+  # Cree par la pile Traefik, pas par celle-ci -- d'ou `external`.
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}

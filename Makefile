@@ -8,14 +8,23 @@
 
 SHELL := /bin/sh
 
-COMPOSE := docker compose
-PROD    := $(COMPOSE) -f docker/compose.production.yaml
-DEV     := $(COMPOSE) -f docker/compose.yaml
+COMPOSE  := docker compose
+PROD     := $(COMPOSE) -f docker/compose.production.yaml
+PROD_TLS := $(PROD) -f docker/compose.traefik.yaml
+DEMO     := $(PROD_TLS) -f docker/compose.demo.yaml
+# Nom de projet distinct, et ce n'est pas cosmetique : `compose.yaml` et
+# `compose.production.yaml` declarent tous deux `name: flow` et les memes
+# volumes. Sans cette isolation, essayer la demonstration sur une machine de
+# developpement ferait tourner la pile de production sur la base de
+# developpement -- que la remise a zero horaire viderait.
+DEMO_LOCAL := $(COMPOSE) -p flow-demo-locale -f docker/compose.production.yaml -f docker/compose.demo.yaml
+DEV      := $(COMPOSE) -f docker/compose.yaml
 
 .DEFAULT_GOAL := aide
 .PHONY: aide dev dev-services dev-arret dev-remise-a-zero verifier images \
         parcours parcours-ui parcours-installer \
         prod prod-etat prod-journal prod-arret prod-migrer prod-admin \
+        demo demo-etat demo-journal demo-arret demo-locale demo-locale-arret \
         version
 
 # --- Aide --------------------------------------------------------------------
@@ -29,6 +38,13 @@ aide:
 	@echo '  make verifier             mise en forme, SVG, lint, types et tests'
 	@echo '  make images               construit les quatre images en :local'
 	@echo '  make parcours             tests de bout en bout dans un vrai navigateur'
+	@echo ''
+	@echo 'Demonstration publique'
+	@echo '  make demo                 pile + Traefik + surcouche de demonstration'
+	@echo '  make demo-locale          la meme sans Traefik, sur FLOW_WEB_PORT'
+	@echo '  make demo-etat            etat et sante des conteneurs'
+	@echo '  make demo-journal         suit la remise a zero (Ctrl-C pour sortir)'
+	@echo '  make demo-arret           arrete'
 	@echo ''
 	@echo 'Publication'
 	@echo '  make version V=0.1.1      coupe release/0.1.1, prete a fusionner dans main'
@@ -128,6 +144,35 @@ prod-admin:
 		-e FLOW_ADMIN_PASSWORD='$(MOT_DE_PASSE)' \
 		-e FLOW_ADMIN_USERNAME='$(IDENTIFIANT)' \
 		api node apps/api/dist/cli/initialiser.js
+
+# --- Demonstration -----------------------------------------------------------
+#
+# La surcouche recharge le jeu de demonstration a chaque heure ronde : elle
+# **vide la base**. Ne jamais la superposer a une installation reelle.
+#
+# Elle ferme aussi en ecriture les routes qu'un visiteur administrateur ne doit
+# pas atteindre -- plugins, regles de bots, annuaire, clefs d'API -- et affiche
+# les identifiants sur l'ecran de connexion.
+
+demo:
+	$(DEMO) up -d
+
+demo-etat:
+	$(DEMO) ps
+
+demo-journal:
+	$(DEMO) logs -f --tail 50 demo-reset
+
+demo-arret:
+	$(DEMO) down
+
+# Sans Traefik, pour essayer la demonstration sur une machine de developpement.
+# Publie l'interface sur FLOW_WEB_PORT.
+demo-locale:
+	$(DEMO_LOCAL) up -d
+
+demo-locale-arret:
+	$(DEMO_LOCAL) down -v
 
 # --- Publication -------------------------------------------------------------
 #

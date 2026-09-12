@@ -199,6 +199,13 @@ FROM nginx:1.31-alpine AS web
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
+# Le dossier du point d'extension, vide. Un `include` dont le motif ne
+# correspond a rien ne fait rien ; un `include` dont le **dossier** n'existe pas
+# fait echouer nginx au demarrage. Sans cette ligne, l'image ne partirait que
+# lorsqu'un deploiement monte un fichier dedans -- c'est-a-dire jamais dans le
+# cas ordinaire.
+RUN mkdir -p /etc/nginx/flow-extra
+
 EXPOSE 80
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \
