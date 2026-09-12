@@ -11,6 +11,28 @@ tant que le numéro majeur est `0`, une version mineure peut rompre.
 Ce qui ne concerne que le dépôt — intégration continue, outillage de publication, fichiers de
 communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas à qui y contribue.
 
+## [0.3.1] — 12 septembre 2026
+
+### Corrigé
+
+- **La pile ne montait pas sur une installation neuve.** Trois services montent les mêmes volumes
+  nommés et démarraient ensemble ; or Docker remplit un volume vide avec le contenu de l'image **à
+  chaque montage**. Les copies partaient en même temps dans le même dossier, et l'une échouait sur
+  `failed to mkdir …/exemple-carnet/dist: file exists`. Le message accusait un chemin de volume sans
+  dire que deux conteneurs se marchaient dessus.
+
+  Le worker et la remise à zéro attendent désormais que l'API ait **démarré** — `service_started`,
+  pas `service_healthy` : la recopie a lieu bien avant que la sonde ne réponde, et attendre la santé
+  coûterait trente secondes à chaque démarrage pour lier le worker à une API dont il n'a aucun
+  besoin.
+
+  Le défaut existait depuis la `0.1.0` entre l'API et le worker, avec une fenêtre plus étroite : la
+  surcouche de démonstration, en ajoutant un troisième candidat, l'a rendu systématique.
+
+- **La remise à zéro ne monte plus les dépôts de bots et de plugins.** Elle amorce la base et met
+  des exécutions en file&nbsp;; elle ne charge jamais un module. `extends` les lui apportait depuis
+  l'API.
+
 ## [0.3.0] — 12 septembre 2026
 
 ### Sécurité
@@ -201,6 +223,7 @@ communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas 
 - Pas d'éditeur de flux visuel, pas d'enregistrement de sessions, pas de pont vers les bots .NET de
   BotManager. Ces trois points sont hors périmètre, et le resteront.
 
+[0.3.1]: https://github.com/tick0001/flow/releases/tag/v0.3.1
 [0.3.0]: https://github.com/tick0001/flow/releases/tag/v0.3.0
 [0.2.0]: https://github.com/tick0001/flow/releases/tag/v0.2.0
 [0.1.0]: https://github.com/tick0001/flow/releases/tag/v0.1.0
