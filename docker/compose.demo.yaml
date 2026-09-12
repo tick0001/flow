@@ -41,7 +41,7 @@ services:
       # espaces.
       LOGIN_BANNER: |-
         Démonstration — connectez-vous avec sophie / flow.
-        Les cinq comptes et ce que chacun montre : https://flowand.fr/#comptes
+        Les cinq comptes et ce que chacun montre : https://tickand.fr/flow/#comptes
         Remise à zéro chaque heure. · Public demo — sign in with sophie / flow, the five accounts are explained on the site, everything resets on the hour.
 
   # Remise a zero horaire.

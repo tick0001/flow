@@ -115,6 +115,62 @@ termine le TLS et relaie vers ce port. Le fichier [`deploy/nginx/flow.conf`](../
 donne une configuration nginx complète ; remplacer `proxy_pass` par `http://127.0.0.1:8080` et
 retirer le bloc statique, que le conteneur `web` sert déjà.
 
+Il n'y a rien à fusionner avec le nginx du conteneur `web` : les deux ne font pas le même métier. Le
+nginx interne sert les fichiers de l'interface, replie les routes du navigateur sur `index.html`, et
+relaie `/api/` vers l'API — ce qui garde l'interface et l'API sur la **même origine**, condition pour
+que le cookie de session, `httpOnly` et `SameSite`, voyage. Le relais de devant, lui, termine le TLS
+et route un nom de domaine vers le conteneur.
+
+#### Derrière un Traefik déjà en place
+
+Le fichier [`compose.traefik.yaml`](../docker/compose.traefik.yaml) se superpose à celui de
+production. **Il ne lance pas Traefik** : il ne déclare aucun service. Le Traefik reste le vôtre,
+dans son propre compose, avec sa propre configuration — la surcouche ne fait que lui donner un
+conteneur de plus à router, en posant les étiquettes sur `web`, en le rattachant au réseau existant,
+et en retirant le port publié.
+
+```bash
+docker compose -f docker/compose.production.yaml                -f docker/compose.traefik.yaml up -d
+```
+
+Quatre variables à renseigner dans `docker/.env`, en accord avec la pile Traefik existante :
+
+```ini
+FLOW_HOST=flow.exemple.fr
+TRAEFIK_NETWORK=traefik
+TRAEFIK_ENTRYPOINT=websecure
+TRAEFIK_CERTRESOLVER=letsencrypt
+```
+
+Les valeurs par défaut sont les conventions les plus répandues, **pas nécessairement les vôtres** :
+les trois dernières se lisent dans la configuration du Traefik déjà en place, et le plus simple est
+de les recopier depuis le `.env` d'un service que ce Traefik route déjà. Et `API_URL` comme `WEB_URL`
+passent en `https://`, sinon les liens fabriqués par l'API pointeront ailleurs que le site.
+
+Les trois se trompent de façons différentes, et une seule se voit tout de suite :
+
+| Valeur fausse          | Ce qui arrive                                                                                                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRAEFIK_NETWORK`      | `docker compose up` refuse de démarrer — le réseau externe n'existe pas. C'est la panne la plus franche des trois.                                                              |
+| `TRAEFIK_ENTRYPOINT`   | le routeur n'est pas créé du tout : l'adresse répond ce que Traefik répond par défaut, souvent un 404, avec le certificat d'un autre site.                                      |
+| `TRAEFIK_CERTRESOLVER` | **le site répond bien, en HTTPS, et le navigateur le dit « non sécurisé »** : Traefik ne trouve pas le résolveur nommé, alors il présente son certificat auto-signé de secours. |
+
+Le troisième cas est le piège : tout marche, la connexion s'établit, et seul l'avertissement du
+navigateur dit qu'il y a un problème. Le journal de Traefik le nomme :
+
+```bash
+docker logs traefik 2>&1 | grep -iE 'certificate resolver|acme|entryPoint' | tail -20
+```
+
+Une adresse dont l'enregistrement DNS ne pointait pas encore sur la machine au moment de la demande
+donne le même symptôme, pour une autre raison — le certificat n'a pas pu être délivré. Il suffit
+alors de redémarrer le conteneur `web` une fois le DNS résolu, pour que Traefik redemande.
+
+Le port publié disparaît à dessein. Le garder ouvrirait l'application en clair sur un port de
+l'hôte, à côté du TLS de Traefik — et comme le cookie de session porte l'attribut `Secure` en
+production, une connexion par ce chemin-là échouerait **sans message** : le navigateur refuserait
+simplement d'enregistrer le cookie.
+
 ### 2.8 Déposer un bot
 
 Une installation neuve contient déjà le bot d'exemple : il sert à vérifier que la chaîne complète
@@ -321,7 +377,7 @@ en « Refusé » avec ce motif, et l'application démarre sans lui plutôt que d
 ## 6. Une instance de démonstration publique
 
 Le dépôt porte de quoi monter une démonstration ouverte à tous, comme celle de
-[flowand.fr](https://flowand.fr). C'est une **surcouche** à la pile de production, jamais une
+[tickand.fr/flow](https://tickand.fr/flow/). C'est une **surcouche** à la pile de production, jamais une
 installation à part :
 
 ```bash
@@ -384,6 +440,7 @@ laisserait le piège ouvert pour qui écrit son premier bot en copiant les nôtr
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | `checks.workers` vaut 0                                    | le worker ne joint pas Redis, ou il est tombé — `docker compose logs worker`    |
 | La connexion réussit puis renvoie à la connexion           | `COOKIE_SECURE=true` sur une installation servie en HTTP                        |
+| HTTPS répond, mais le navigateur dit « non sécurisé »      | `TRAEFIK_CERTRESOLVER` ne nomme aucun résolveur existant — voir 2.7             |
 | « Identifiants invalides » sur le compte amorcé            | l'amorçage a tourné sur une autre base que celle de `.env`                      |
 | Un bot apparaît « Refusé »                                 | son dossier n'est pas construit, ou son manifeste vise une autre majeure de SDK |
 | Une exécution reste en file                                | aucun worker n'écoute — voir la première ligne                                  |

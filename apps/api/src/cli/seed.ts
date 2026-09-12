@@ -331,8 +331,9 @@ async function main(): Promise<void> {
       // --- La mise a disposition des bots ------------------------------------
       //
       // Volontairement inegale : c'est ce qui rend la regle visible. Depuis Lyon
-      // on voit trois bots, depuis le Siege on en voit quatre, et « Espace
-      // connecte » n'est ouvert qu'a l'administration.
+      // on voit trois bots, depuis le Siege trois aussi mais pas les memes, et
+      // « Espace connecte » n'y apparait qu'avec le profil d'administration --
+      // la regle porte sur l'entite **et** sur le profil.
       const regles: [string, string, boolean, string | null][] = [
         [BOTS.bonjour.id, 'racine', true, null],
         [BOTS.epreuves.id, 'racine', true, null],

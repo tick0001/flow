@@ -11,6 +11,23 @@ tant que le numéro majeur est `0`, une version mineure peut rompre.
 Ce qui ne concerne que le dépôt — intégration continue, outillage de publication, fichiers de
 communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas à qui y contribue.
 
+## Non publié
+
+### Corrigé
+
+- **Le bandeau de la démonstration renvoyait vers un domaine qui n'existe pas.** Flow& n'a pas de
+  site à lui&nbsp;: sa page est celle de la collection,
+  [tickand.fr/flow](https://tickand.fr/flow/). Le lien de `LOGIN_BANNER`, celui du guide et la page
+  d'accueil du paquet le disent désormais. Aucune image à remonter&nbsp;: le bandeau vit dans la
+  surcouche Compose, qu'un `git pull` suffit à rafraîchir.
+
+### Documentation
+
+- **Le guide couvre la surcouche Traefik**, que seul un commentaire du fichier décrivait&nbsp;: les
+  quatre variables, ce que chacune casse quand elle est fausse, et le cas qui ne se voit pas — un
+  nom de résolveur inconnu fait répondre le site en HTTPS avec le certificat auto-signé de Traefik.
+  Le navigateur dit « non sécurisé », le journal de Traefik le nomme, et rien d'autre ne bronche.
+
 ## [0.3.1] — 12 septembre 2026
 
 ### Corrigé

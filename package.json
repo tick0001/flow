@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/tick0001/flow/issues"
   },
-  "homepage": "https://flowand.fr",
+  "homepage": "https://tickand.fr/flow",
   "license": "AGPL-3.0-or-later",
   "packageManager": "pnpm@11.25.0",
   "engines": {
