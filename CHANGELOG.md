@@ -11,15 +11,16 @@ tant que le numéro majeur est `0`, une version mineure peut rompre.
 Ce qui ne concerne que le dépôt — intégration continue, outillage de publication, fichiers de
 communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas à qui y contribue.
 
-## Non publié
+## [0.3.2] — 13 septembre 2026
 
 ### Corrigé
 
 - **Le bandeau de la démonstration renvoyait vers un domaine qui n'existe pas.** Flow& n'a pas de
   site à lui&nbsp;: sa page est celle de la collection,
   [tickand.fr/flow](https://tickand.fr/flow/). Le lien de `LOGIN_BANNER`, celui du guide et la page
-  d'accueil du paquet le disent désormais. Aucune image à remonter&nbsp;: le bandeau vit dans la
-  surcouche Compose, qu'un `git pull` suffit à rafraîchir.
+  d'accueil du paquet le disent désormais. Aucune image ne portait le défaut&nbsp;: le bandeau vit
+  dans la surcouche Compose, et un `git pull` suffit à le corriger. La `0.3.2` est là pour que les
+  images publiées correspondent exactement au dépôt.
 
 ### Documentation
 
@@ -246,6 +247,7 @@ communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas 
 - Pas d'éditeur de flux visuel, pas d'enregistrement de sessions, pas de pont vers les bots .NET de
   BotManager. Ces trois points sont hors périmètre, et le resteront.
 
+[0.3.2]: https://github.com/tick0001/flow/releases/tag/v0.3.2
 [0.3.1]: https://github.com/tick0001/flow/releases/tag/v0.3.1
 [0.3.0]: https://github.com/tick0001/flow/releases/tag/v0.3.0
 [0.2.0]: https://github.com/tick0001/flow/releases/tag/v0.2.0
