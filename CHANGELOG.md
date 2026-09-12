@@ -11,26 +11,68 @@ tant que le numéro majeur est `0`, une version mineure peut rompre.
 Ce qui ne concerne que le dépôt — intégration continue, outillage de publication, fichiers de
 communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas à qui y contribue.
 
-## Non publié
+## [0.3.0] — 12 septembre 2026
+
+### Sécurité
+
+- **Aucun bot livré ne prend plus d'adresse.** Leurs paramètres sont désormais des listes fermées,
+  des booléens et des entiers bornés — jamais de texte libre, jamais d'URL.
+
+  Un bot qui ouvre l'adresse qu'on lui donne fait du serveur qui l'héberge un **relais ouvert** :
+  vers son réseau interne comme vers n'importe quel site tiers, depuis son adresse IP et sous son
+  nom de domaine. Sur une installation où vous choisissez qui lance quoi, la question ne se pose pas
+  de la même façon ; sur une instance ouverte à tous, c'est la première chose qui casse.
+
+  La contrainte est posée **dans les bots**, pas dans la configuration de la démonstration : un
+  refus placé ailleurs n'aurait protégé qu'elle, et laissé le piège ouvert pour qui écrit son
+  premier bot en copiant les nôtres. Voir [le SDK](docs/15-sdk-bots.md).
+
+- **La surcouche de démonstration ferme en écriture** ce qu'un visiteur administrateur ne doit pas
+  atteindre : plugins, règles de bots, annuaire, clés d'API. Les refus sont posés dans le relais
+  nginx plutôt que dans l'application — une règle nginx ne dépend d'aucun droit, d'aucune session et
+  d'aucun chemin de code, si bien qu'elle tient le jour où une route nouvelle oublie sa garde. La
+  lecture reste ouverte partout.
 
 ### Ajouté
 
-- **Une surcouche de démonstration publique.** `make demo` superpose à la pile de production un
-  jeu de données rechargé à chaque heure ronde, les identifiants affichés sur l'écran de connexion,
-  et des refus nginx sur les routes qu'un visiteur administrateur ne doit pas écrire — plugins,
-  règles de bots, annuaire, clés d'API. La lecture y reste ouverte. Voir
-  [le guide](docs/23-installation.md#6-une-instance-de-démonstration-publique).
+- **Trois bots livrés en plus**, qui montrent ce que fait l'outil plutôt que seulement ce qu'est un
+  bot : `exemple.catalogue` (pagination, extraction structurée, fichier produit),
+  `exemple.connexion` (formulaire, session ouverte, vérification qu'elle a pris) et
+  `exemple.epreuves` (dialogue, contenu différé, cadres imbriqués — et un échec volontaire, qui
+  donne à voir la capture du moment et la trace Playwright).
+
+- **Une surcouche de démonstration publique.** `make demo` superpose à la pile de production un jeu
+  de données rechargé à chaque heure ronde, les identifiants affichés sur l'écran de connexion, et
+  les refus ci-dessus. Elle rejoue quatre exécutions réelles après chaque amorçage : le jeu de
+  données fabrique l'historique mais aucune pièce, et une capture inventée serait une capture de
+  rien. Voir [le guide](docs/23-installation.md).
 
 - **Une surcouche Traefik**, `compose.traefik.yaml` : elle ne lance pas Traefik, elle pose les
   étiquettes sur le conteneur `web` et retire le port publié.
 
-- **`db:seed`**, le jeu de démonstration : sept entités, cinq comptes, un mois d'historique.
+- **`db:seed`**, le jeu de démonstration : sept entités, cinq comptes qui montrent chacun un cas du
+  modèle de droits, quatre planifications et un mois d'historique.
 
 - **`LOGIN_BANNER`** : un message affiché avant toute authentification, rendu comme du texte, avec
-  les adresses cliquables.
+  les adresses cliquables. Sans lui, un visiteur d'une démonstration arrive devant un formulaire
+  sans savoir quoi taper.
 
 - **Un point d'extension nginx**, `/etc/nginx/flow-extra/*.conf`. Un déploiement particulier y pose
   ses différences sans recopier la configuration de base — et sans qu'elles divergent.
+
+### Modifié
+
+- **`exemple.bonjour` ne sort plus de la machine.** Il sert sa propre page plutôt que d'en visiter
+  une, et ses paramètres deviennent `decor` et `pause`. C'est ce qui en fait une sonde honnête :
+  quand il échoue, c'est Flow& qui a un problème, pas le réseau.
+
+### À faire en montant
+
+- **Une planification de `exemple.bonjour` continuera de tourner, mais ne fera plus la même
+  chose.** Ses anciens paramètres — `url`, `selecteur`, `attendreReseau` — n'existent plus dans son
+  schéma : ils sont ignorés, les valeurs par défaut s'appliquent, et le bot lit sa propre page au
+  lieu de l'adresse que vous lui aviez donnée. Rien n'échoue, et c'est bien le problème : **relisez
+  vos planifications** de ce bot, et recréez-les sur un bot qui fait ce que vous attendez.
 
 ## [0.2.0] — 12 septembre 2026
 
@@ -159,5 +201,6 @@ communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas 
 - Pas d'éditeur de flux visuel, pas d'enregistrement de sessions, pas de pont vers les bots .NET de
   BotManager. Ces trois points sont hors périmètre, et le resteront.
 
+[0.3.0]: https://github.com/tick0001/flow/releases/tag/v0.3.0
 [0.2.0]: https://github.com/tick0001/flow/releases/tag/v0.2.0
 [0.1.0]: https://github.com/tick0001/flow/releases/tag/v0.1.0
