@@ -11,7 +11,7 @@ tant que le numéro majeur est `0`, une version mineure peut rompre.
 Ce qui ne concerne que le dépôt — intégration continue, outillage de publication, fichiers de
 communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas à qui y contribue.
 
-## Non publié
+## [0.3.1] — 12 septembre 2026
 
 ### Corrigé
 
@@ -223,6 +223,7 @@ communauté — n'y figure pas. Ce journal s'adresse à qui exploite Flow&, pas 
 - Pas d'éditeur de flux visuel, pas d'enregistrement de sessions, pas de pont vers les bots .NET de
   BotManager. Ces trois points sont hors périmètre, et le resteront.
 
+[0.3.1]: https://github.com/tick0001/flow/releases/tag/v0.3.1
 [0.3.0]: https://github.com/tick0001/flow/releases/tag/v0.3.0
 [0.2.0]: https://github.com/tick0001/flow/releases/tag/v0.2.0
 [0.1.0]: https://github.com/tick0001/flow/releases/tag/v0.1.0
