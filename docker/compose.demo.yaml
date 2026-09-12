@@ -60,13 +60,29 @@ services:
     healthcheck:
       disable: true
 
-    volumes:
-      # Les memes volumes que l'API -- l'heritage les apporte --, plus la boucle.
-      # Elle vit dans un fichier plutot que dans un champ `command` : une boucle
-      # shell ecrite en YAML demande d'echapper chaque `$`, se relit mal, et
-      # Compose la decoupe de facon surprenante.
-      - bots:/app/bots
-      - plugins:/app/plugins
+    # **Apres l'API**, pour la meme raison que le worker : un volume nomme vide
+    # est rempli par Docker a chaque montage, et trois conteneurs demarres
+    # ensemble sur une installation neuve se marchent dessus. Voir le commentaire
+    # du service `worker` dans `compose.production.yaml`.
+    depends_on:
+      api:
+        condition: service_started
+
+    volumes: !override
+      # **`!override`, et il le faut** : `extends` apporte les volumes de
+      # l'API, dont `bots` et `plugins`. Ce service n'en a aucun besoin -- il
+      # amorce la base et met des executions en file, il ne charge jamais un
+      # module de bot -- et les monter ajoutait un troisieme candidat a la
+      # recopie concurrente.
+      #
+      # Il garde `stockage` parce qu'il le vide a chaque remise a zero, et la
+      # boucle elle-meme. Elle vit dans un fichier plutot que dans un champ
+      # `command` : une boucle shell ecrite en YAML demande d'echapper chaque
+      # `$`, se relit mal, et Compose la decoupe de facon surprenante.
+      #
+      # `!override` remplace la liste heritee au lieu de s'y ajouter -- `!reset`
+      # la viderait sans permettre d'en poser une autre. Demande Compose 2.24 ou
+      # plus, comme `compose.traefik.yaml`.
       - stockage:/donnees/stockage
       - ./demo-reset.sh:/demo-reset.sh:ro
 

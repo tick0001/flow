@@ -361,6 +361,12 @@ vrai Chromium — dont une qui échoue exprès, pour que l'écran d'historique a
 trace à montrer. Elles vérifient la pile au passage : une démonstration dont le worker est mort
 depuis trois jours ressemble à une démonstration qui marche, jusqu'à ce qu'un visiteur clique.
 
+### Compose 2.24 au minimum
+
+Les deux surcouches emploient `!reset` et `!override`, qui n'existent pas avant. Sur une version
+antérieure, `docker compose version` le dit — et la pile démarre en ignorant silencieusement ce que
+la surcouche voulait changer, ce qui est pire qu'un refus.
+
 ### Ce dont Flow& n'a pas à se protéger, et pourquoi
 
 **Aucun bot livré ne prend d'adresse.** Leurs paramètres sont des listes fermées, des booléens et

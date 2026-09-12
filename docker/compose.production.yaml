@@ -134,6 +134,22 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
+      # **Apres l'API, et pas seulement apres les migrations.**
+      #
+      # Un volume nomme vide est rempli par Docker avec le contenu de l'image, a
+      # chaque montage. `bots` et `stockage` sont montes par les deux services :
+      # demarres ensemble sur une installation neuve, les deux copies partent en
+      # meme temps dans le meme dossier, et la seconde echoue sur
+      # « failed to mkdir … : file exists ». La pile ne monte pas, et le message
+      # accuse un chemin de volume sans dire que deux conteneurs se marchaient
+      # dessus.
+      #
+      # `service_started` et non `service_healthy` : la recopie a lieu au
+      # demarrage du conteneur, bien avant que sa sonde ne reponde. Attendre la
+      # sante coûterait trente secondes a chaque demarrage et lierait le worker a
+      # l'API, dont il n'a par ailleurs aucun besoin.
+      api:
+        condition: service_started
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL}
