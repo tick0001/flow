@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@flow/contracts": "workspace:*",
-    "zod": "^4.5.4"
+    "zod": "^4.6.2"
   },
   "peerDependencies": {
     "playwright": "^1.58.0"
