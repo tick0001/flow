@@ -16,7 +16,7 @@
   "dependencies": {
     "@flow/contracts": "workspace:*",
     "@fontsource-variable/archivo": "^5.3.0",
-    "@tanstack/react-query": "^5.103.1",
+    "@tanstack/react-query": "^5.104.1",
     "clsx": "^2.1.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -24,9 +24,9 @@
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.5",
     "@flow/i18n": "workspace:*",
-    "i18next": "^26.4.2",
-    "react-i18next": "^17.0.14",
-    "react-hook-form": "^7.88.0",
+    "i18next": "^26.4.3",
+    "react-i18next": "^17.0.16",
+    "react-hook-form": "^7.89.0",
     "@hookform/resolvers": "^5.2.2"
   },
   "devDependencies": {
@@ -36,11 +36,11 @@
     "@testing-library/user-event": "^14.6.7",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
-    "@vitejs/plugin-react": "^6.1.1",
-    "happy-dom": "^20.14.5",
+    "@vitejs/plugin-react": "^6.1.2",
+    "happy-dom": "^20.14.6",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "vite": "^8.3.0",
-    "vitest": "^5.0.1"
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
   }
 }
